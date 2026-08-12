@@ -125,6 +125,28 @@
             </div>
             <span class="hint">Year-1 production from the proposal.</span>
           </label>
+          <fieldset class="field escalator-field">
+            <legend class="field-label">Annual increase</legend>
+            <div class="escalator-pills" role="radiogroup" aria-label="Solar annual increase">
+              <label>
+                <input type="radio" name="solar-escalator" value="0" />
+                <span>0%</span>
+              </label>
+              <label>
+                <input type="radio" name="solar-escalator" value="0.0099" />
+                <span>0.99%</span>
+              </label>
+              <label>
+                <input type="radio" name="solar-escalator" value="0.0199" />
+                <span>1.99%</span>
+              </label>
+              <label>
+                <input type="radio" name="solar-escalator" value="0.0299" checked />
+                <span>2.99%<small>typical</small></span>
+              </label>
+            </div>
+            <span class="hint">2.99% is most common. Pick the cap in this proposal.</span>
+          </fieldset>
         </section>
 
         <div class="intake-actions">
@@ -301,16 +323,17 @@
 
         <div class="story-card story-solar">
           <p class="story-kicker">Your Trinity solar rate</p>
-          <h3>Capped at <em>2.99%</em> a year. Guaranteed.</h3>
-          <p>
+          <h3 id="solar-cap-headline">Capped at <em>2.99%</em> a year. Guaranteed.</h3>
+          <p id="solar-cap-body">
             Your solar kWh price can rise less than 3% annually — <strong>2.99%</strong>, written
             into the agreement. No August surprise. No uncapped climb. You know the number before
             you sign, and it stays honest for the life of the contract.
           </p>
           <div class="cap-badge">
-            <p class="cap-num">2.99%</p>
-            <p class="cap-copy">annual increase<br />less than 3%, guaranteed</p>
+            <p class="cap-num" id="cap-num">2.99%</p>
+            <p class="cap-copy" id="cap-copy">annual increase<br />less than 3%, guaranteed</p>
           </div>
+          <p class="cap-foot" id="cap-foot">Written into the agreement</p>
         </div>
       </section>
 
@@ -320,7 +343,7 @@
           <h3>Ten years of bills, side by side</h3>
           <p>
             Utility path assumes rates keep rising at <strong>10% / year</strong> — in line with
-            Massachusetts since 2020. Solar path uses your locked-in <strong>2.99%</strong> cap
+            Massachusetts since 2020. Solar path uses your locked-in <strong id="horizon-cap">2.99%</strong> cap
             on the numbers above.
           </p>
         </div>
@@ -345,12 +368,12 @@
           </div>
         </div>
         <p class="horizon-save" id="horizon-save"></p>
-        <p class="disclaimer">
+        <p class="disclaimer" id="disclaimer">
           Comparison uses year-1 costs from the T-chart, then applies 10% annual utility increases
-          (the Massachusetts pace since 2020) versus a 2.99% solar escalator. If production is below
-          usage, solar-side annual and monthly totals include leftover utility kWh at today’s utility
-          rate; that leftover still escalates at 10% in the 10-year view. Past utility increases do
-          not guarantee future rates. Illustrative — not a savings guarantee.
+          (the Massachusetts pace since 2020) versus the solar escalator selected for this proposal.
+          If production is below usage, solar-side annual and monthly totals include leftover utility
+          kWh at today’s utility rate; that leftover still escalates at 10% in the 10-year view.
+          Past utility increases do not guarantee future rates. Illustrative — not a savings guarantee.
         </p>
       </section>
     </main>

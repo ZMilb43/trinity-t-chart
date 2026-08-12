@@ -5,7 +5,6 @@
  */
 
 const STORAGE_KEY = "trinity-tchart-v1";
-const SOLAR_ESCALATOR = 0.0299;
 const UTILITY_ESCALATOR = 0.10;
 const HORIZON_YEARS = 10;
 
@@ -73,11 +72,65 @@ const els = {
   hbarUtil: document.getElementById("hbar-util"),
   hbarSolar: document.getElementById("hbar-solar"),
   sparkline: document.getElementById("sparkline"),
+  capHeadline: document.getElementById("solar-cap-headline"),
+  capBody: document.getElementById("solar-cap-body"),
+  capNum: document.getElementById("cap-num"),
+  capCopy: document.getElementById("cap-copy"),
+  capFoot: document.getElementById("cap-foot"),
+  horizonCap: document.getElementById("horizon-cap"),
+  disclaimer: document.getElementById("disclaimer"),
 };
 
 let walking = false;
 let walkIndex = 0;
 const stepNodes = () => [...document.querySelectorAll("#screen-chart [data-step]")];
+
+function selectedEscalator() {
+  const checked = document.querySelector('input[name="solar-escalator"]:checked');
+  const n = Number(checked && checked.value);
+  return Number.isFinite(n) ? n : 0.0299;
+}
+
+function setEscalator(value) {
+  const radio = document.querySelector(
+    `input[name="solar-escalator"][value="${value}"]`
+  );
+  if (radio) radio.checked = true;
+}
+
+function capLabel(rate) {
+  if (rate <= 0) return "0%";
+  return `${(rate * 100).toFixed(2)}%`;
+}
+
+function capCopy(rate) {
+  const pct = capLabel(rate);
+  if (rate <= 0) {
+    return {
+      headline: "No annual increase. <em>Locked in.</em>",
+      body: "Your solar kWh price does not go up. Year one is the same as year ten — written into the agreement. No August surprise. No uncapped climb. You know the number before you sign.",
+      badge: "0%",
+      badgeCopy: "annual increase<br />your rate never goes up",
+      foot: "Locked in — no annual increase",
+    };
+  }
+  if (rate >= 0.0299) {
+    return {
+      headline: `Capped at <em>${pct}</em> a year. Guaranteed.`,
+      body: `Your solar kWh price can rise less than 3% annually — <strong>${pct}</strong>, written into the agreement. No August surprise. No uncapped climb. You know the number before you sign, and it stays honest for the life of the contract.`,
+      badge: pct,
+      badgeCopy: "annual increase<br />less than 3%, guaranteed",
+      foot: "Written into the agreement",
+    };
+  }
+  return {
+    headline: `Capped at <em>${pct}</em> a year. Guaranteed.`,
+    body: `Your solar kWh price can rise <strong>${pct}</strong> annually — written into the agreement. No August surprise. No uncapped climb. You know the number before you sign, and it stays honest for the life of the contract.`,
+    badge: pct,
+    badgeCopy: "annual increase<br />guaranteed in the agreement",
+    foot: "Written into the agreement",
+  };
+}
 
 function parseRate(raw) {
   const n = Number(raw);
@@ -120,6 +173,7 @@ function readInputs() {
     solarRate,
     utilityKwh: Number.isFinite(utilityKwh) ? utilityKwh : 0,
     solarKwh: Number.isFinite(solarKwh) ? solarKwh : 0,
+    solarEscalator: selectedEscalator(),
   };
 }
 
@@ -133,6 +187,7 @@ function saveInputs() {
       utilityKwh: els.utilityKwh.value,
       solarRate: els.solarRate.value,
       solarKwh: els.solarKwh.value,
+      solarEscalator: selectedEscalator(),
     })
   );
 }
@@ -148,6 +203,7 @@ function loadInputs() {
     els.utilityKwh.value = data.utilityKwh || "";
     els.solarRate.value = data.solarRate || "";
     els.solarKwh.value = data.solarKwh || "";
+    if (data.solarEscalator != null) setEscalator(String(data.solarEscalator));
   } catch {
     /* ignore */
   }
@@ -212,10 +268,12 @@ function renderChart() {
   const monthlySave = utilMonthly - solarSideMonthly;
   const coverage = (data.solarKwh / data.utilityKwh) * 100;
   const leftoverLabel = `${data.utilityName === "Utility" ? "Utility" : data.utilityName} leftover`;
+  const solarEscalator = data.solarEscalator;
+  const cap = capCopy(solarEscalator);
 
   const util10 = escalatingSum(utilAnnual, UTILITY_ESCALATOR, HORIZON_YEARS);
   const solar10 =
-    escalatingSum(solarOnlyAnnual, SOLAR_ESCALATOR, HORIZON_YEARS) +
+    escalatingSum(solarOnlyAnnual, solarEscalator, HORIZON_YEARS) +
     escalatingSum(leftoverAnnual, UTILITY_ESCALATOR, HORIZON_YEARS);
   const save10 = util10 - solar10;
   const maxBar = Math.max(util10, solar10);
@@ -281,6 +339,19 @@ function renderChart() {
     save10 > 0
       ? `${money(save10)} less over 10 years — with a rate that cannot run away.`
       : "Ten-year totals using the escalators above.";
+
+  els.capHeadline.innerHTML = cap.headline;
+  els.capBody.innerHTML = cap.body;
+  els.capNum.textContent = cap.badge;
+  els.capCopy.innerHTML = cap.badgeCopy;
+  els.capFoot.textContent = cap.foot;
+  els.horizonCap.textContent = capLabel(solarEscalator);
+  els.disclaimer.textContent =
+    `Comparison uses year-1 costs from the T-chart, then applies 10% annual utility increases ` +
+    `(the Massachusetts pace since 2020) versus a ${capLabel(solarEscalator)} solar escalator. ` +
+    `If production is below usage, solar-side annual and monthly totals include leftover utility ` +
+    `kWh at today’s utility rate; that leftover still escalates at 10% in the 10-year view. ` +
+    `Past utility increases do not guarantee future rates. Illustrative — not a savings guarantee.`;
 
   els.hbarUtil.style.width = "0%";
   els.hbarSolar.style.width = "0%";
@@ -357,6 +428,7 @@ els.sampleBtn.addEventListener("click", () => {
   els.utilityKwh.value = "10800";
   els.solarRate.value = "0.189";
   els.solarKwh.value = "11200";
+  setEscalator("0.0299");
   rateHint(els.utilityRate, els.utilityRateHint);
   rateHint(els.solarRate, els.solarRateHint);
 });
