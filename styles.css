@@ -691,6 +691,10 @@ select:focus {
   padding: 1.3rem 1.25rem 1.25rem;
 }
 
+.horizon {
+  overflow: visible;
+}
+
 .story-kicker {
   margin: 0;
   font-size: 0.7rem;
@@ -765,30 +769,37 @@ select:focus {
 
 .horizon {
   margin-top: 1.1rem;
+  overflow: visible;
 }
 
 .horizon-bars {
   display: grid;
-  gap: 0.85rem;
+  gap: 1.05rem;
   margin-top: 1.1rem;
 }
 
 .hbar-meta {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  align-items: baseline;
+  gap: 0.75rem 1.25rem;
+  flex-wrap: wrap;
   font-size: 0.88rem;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 
 .hbar-meta span {
   font-weight: 650;
   color: var(--ink-soft);
+  min-width: 0;
 }
 
 .hbar-meta strong {
   font-size: 1.15rem;
   letter-spacing: -0.02em;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .hbar-track {
