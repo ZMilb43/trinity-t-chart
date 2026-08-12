@@ -339,11 +339,12 @@
 
       <section class="horizon" data-step="6">
         <div class="horizon-copy">
-          <p class="story-kicker">If the next decade looks like the last</p>
+          <p class="story-kicker" id="horizon-kicker">If the next decade looks like the last</p>
           <h3>Ten years of bills, side by side</h3>
           <p>
-            Utility path assumes rates keep rising at <strong>10% / year</strong> — in line with
-            Massachusetts since 2020. Solar path uses your locked-in <strong id="horizon-cap">2.99%</strong> cap
+            Utility path assumes rates keep rising at <strong id="horizon-util-pct">10% / year</strong>
+            — <span id="horizon-util-story">in line with Massachusetts since 2020</span>.
+            Solar path uses your locked-in <strong id="horizon-cap">2.99%</strong> cap
             on the numbers above.
           </p>
         </div>
@@ -368,6 +369,19 @@
           </div>
         </div>
         <p class="horizon-save" id="horizon-save"></p>
+        <div class="util-path" id="util-path">
+          <p class="util-path-label">Utility increase in this 10-year view</p>
+          <div class="util-path-pills" role="radiogroup" aria-label="Utility annual increase">
+            <label>
+              <input type="radio" name="utility-escalator" value="5" />
+              <span>5%<small>longer-term</small></span>
+            </label>
+            <label>
+              <input type="radio" name="utility-escalator" value="10" checked />
+              <span>10%<small>since 2020</small></span>
+            </label>
+          </div>
+        </div>
         <p class="disclaimer" id="disclaimer">
           Comparison uses year-1 costs from the T-chart, then applies 10% annual utility increases
           (the Massachusetts pace since 2020) versus the solar escalator selected for this proposal.

@@ -5,7 +5,6 @@
  */
 
 const STORAGE_KEY = "trinity-tchart-v1";
-const UTILITY_ESCALATOR = 0.10;
 const HORIZON_YEARS = 10;
 
 /** Illustrative 10% annual climb from a 2020 baseline — matches the MA sales narrative. */
@@ -77,6 +76,9 @@ const els = {
   capNum: document.getElementById("cap-num"),
   capCopy: document.getElementById("cap-copy"),
   capFoot: document.getElementById("cap-foot"),
+  horizonKicker: document.getElementById("horizon-kicker"),
+  horizonUtilPct: document.getElementById("horizon-util-pct"),
+  horizonUtilStory: document.getElementById("horizon-util-story"),
   horizonCap: document.getElementById("horizon-cap"),
   disclaimer: document.getElementById("disclaimer"),
 };
@@ -96,6 +98,39 @@ function setEscalator(value) {
     `input[name="solar-escalator"][value="${value}"]`
   );
   if (radio) radio.checked = true;
+}
+
+function selectedUtilityEscalator() {
+  const checked = document.querySelector('input[name="utility-escalator"]:checked');
+  return checked && checked.value === "5" ? 0.05 : 0.1;
+}
+
+function setUtilityEscalator(rate) {
+  const n = Number(rate);
+  const isFive = n === 5 || (n > 0 && n <= 0.075);
+  const radio = document.querySelector(
+    `input[name="utility-escalator"][value="${isFive ? "5" : "10"}"]`
+  );
+  if (radio) radio.checked = true;
+}
+
+function utilityPathCopy(rate) {
+  if (rate <= 0.075) {
+    return {
+      kicker: "If rates follow the longer-term path",
+      pct: "5% / year",
+      story: "in line with longer-term Massachusetts trends",
+      pace: "5% annual utility increases (longer-term Massachusetts pace)",
+      leftover: "5%",
+    };
+  }
+  return {
+    kicker: "If the next decade looks like the last",
+    pct: "10% / year",
+    story: "in line with Massachusetts since 2020",
+    pace: "10% annual utility increases (the Massachusetts pace since 2020)",
+    leftover: "10%",
+  };
 }
 
 function capLabel(rate) {
@@ -174,6 +209,7 @@ function readInputs() {
     utilityKwh: Number.isFinite(utilityKwh) ? utilityKwh : 0,
     solarKwh: Number.isFinite(solarKwh) ? solarKwh : 0,
     solarEscalator: selectedEscalator(),
+    utilityEscalator: selectedUtilityEscalator(),
   };
 }
 
@@ -188,6 +224,7 @@ function saveInputs() {
       solarRate: els.solarRate.value,
       solarKwh: els.solarKwh.value,
       solarEscalator: selectedEscalator(),
+      utilityEscalator: selectedUtilityEscalator(),
     })
   );
 }
@@ -204,6 +241,7 @@ function loadInputs() {
     els.solarRate.value = data.solarRate || "";
     els.solarKwh.value = data.solarKwh || "";
     if (data.solarEscalator != null) setEscalator(String(data.solarEscalator));
+    if (data.utilityEscalator != null) setUtilityEscalator(data.utilityEscalator);
   } catch {
     /* ignore */
   }
@@ -269,12 +307,14 @@ function renderChart() {
   const coverage = (data.solarKwh / data.utilityKwh) * 100;
   const leftoverLabel = `${data.utilityName === "Utility" ? "Utility" : data.utilityName} leftover`;
   const solarEscalator = data.solarEscalator;
+  const utilityEscalator = data.utilityEscalator;
   const cap = capCopy(solarEscalator);
+  const utilPath = utilityPathCopy(utilityEscalator);
 
-  const util10 = escalatingSum(utilAnnual, UTILITY_ESCALATOR, HORIZON_YEARS);
+  const util10 = escalatingSum(utilAnnual, utilityEscalator, HORIZON_YEARS);
   const solar10 =
     escalatingSum(solarOnlyAnnual, solarEscalator, HORIZON_YEARS) +
-    escalatingSum(leftoverAnnual, UTILITY_ESCALATOR, HORIZON_YEARS);
+    escalatingSum(leftoverAnnual, utilityEscalator, HORIZON_YEARS);
   const save10 = util10 - solar10;
   const maxBar = Math.max(util10, solar10);
 
@@ -345,12 +385,15 @@ function renderChart() {
   els.capNum.textContent = cap.badge;
   els.capCopy.innerHTML = cap.badgeCopy;
   els.capFoot.textContent = cap.foot;
+  els.horizonKicker.textContent = utilPath.kicker;
+  els.horizonUtilPct.textContent = utilPath.pct;
+  els.horizonUtilStory.textContent = utilPath.story;
   els.horizonCap.textContent = capLabel(solarEscalator);
   els.disclaimer.textContent =
-    `Comparison uses year-1 costs from the T-chart, then applies 10% annual utility increases ` +
-    `(the Massachusetts pace since 2020) versus a ${capLabel(solarEscalator)} solar escalator. ` +
+    `Comparison uses year-1 costs from the T-chart, then applies ${utilPath.pace} ` +
+    `versus a ${capLabel(solarEscalator)} solar escalator. ` +
     `If production is below usage, solar-side annual and monthly totals include leftover utility ` +
-    `kWh at today’s utility rate; that leftover still escalates at 10% in the 10-year view. ` +
+    `kWh at today’s utility rate; that leftover still escalates at ${utilPath.leftover} in the 10-year view. ` +
     `Past utility increases do not guarantee future rates. Illustrative — not a savings guarantee.`;
 
   els.hbarUtil.style.width = "0%";
@@ -446,9 +489,16 @@ els.solarRate.addEventListener("input", () => rateHint(els.solarRate, els.solarR
   els.form.addEventListener(evt, saveInputs);
 });
 
+document.querySelectorAll('input[name="utility-escalator"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    saveInputs();
+    if (!els.chart.hidden) renderChart();
+  });
+});
+
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a")) return;
+  if (event.target.closest(".present-tools, a, .util-path")) return;
   revealNext();
 });
 
