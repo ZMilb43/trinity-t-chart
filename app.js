@@ -251,8 +251,6 @@ function renderChart() {
 
   [els.annualSolarCell, els.monthlySolarCell].forEach((cell) => {
     cell.classList.toggle("has-split", hasLeftover);
-    if (hasLeftover) cell.setAttribute("tabindex", "0");
-    else cell.removeAttribute("tabindex");
   });
 
   els.horizonUtilLabel.textContent = data.utilityName === "Utility" ? "Utility" : data.utilityName;
@@ -358,7 +356,7 @@ els.solarRate.addEventListener("input", () => rateHint(els.solarRate, els.solarR
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .cell.has-split")) return;
+  if (event.target.closest(".present-tools, a")) return;
   revealNext();
 });
 

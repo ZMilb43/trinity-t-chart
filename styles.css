@@ -614,6 +614,10 @@ select:focus {
   box-shadow: 0 10px 24px rgba(11, 31, 42, 0.1);
 }
 
+.cell.has-split .cost-breakdown {
+  display: grid;
+}
+
 .cost-breakdown p {
   display: flex;
   justify-content: space-between;
@@ -631,12 +635,7 @@ select:focus {
 }
 
 .cell.has-split {
-  cursor: pointer;
-}
-
-.cell.has-split:hover .cost-breakdown,
-.cell.has-split:focus-within .cost-breakdown {
-  display: grid;
+  cursor: default;
 }
 
 .cell.has-split:hover .cell-value,
@@ -644,17 +643,35 @@ select:focus {
   transform: scale(1.12);
 }
 
-.source-link {
-  display: inline-block;
-  margin-top: 0.65rem;
+.rate-source {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.12em;
+}
+
+.rate-source em {
   color: var(--accent-deep);
-  font-size: 0.82rem;
+}
+
+.source-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.85rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, #fff);
+  color: var(--accent-deep);
+  font-size: 0.8rem;
   font-weight: 650;
-  text-underline-offset: 0.18em;
+  text-decoration: none;
 }
 
 .source-link:hover {
-  color: var(--ink);
+  background: var(--accent-deep);
+  color: #fff;
+  border-color: var(--accent-deep);
 }
 
 .story {
