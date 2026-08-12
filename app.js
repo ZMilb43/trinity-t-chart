@@ -330,8 +330,8 @@ function renderChart() {
   els.solarKwhOut.textContent = kwh(data.solarKwh);
   els.coverageSub.textContent =
     coverage >= 100
-      ? `produced each year · covers ${Math.round(coverage)}% of usage`
-      : `produced each year · ${kwh(leftoverKwh)} still from the utility`;
+      ? `covers ${Math.round(coverage)}% of usage`
+      : `${kwh(leftoverKwh)} still from the utility`;
 
   els.utilAnnual.textContent = money(utilAnnual);
   els.solarAnnual.textContent = money(solarSideAnnual);
