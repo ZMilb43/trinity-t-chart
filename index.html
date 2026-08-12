@@ -213,9 +213,13 @@
             <span>03</span>
             Annual cost
           </div>
-          <div class="cell solar">
+          <div class="cell solar" id="annual-solar-cell">
             <p class="cell-value" id="solar-annual">—</p>
             <p class="cell-sub" id="annual-save-sub">year one</p>
+            <div class="cost-breakdown" id="annual-breakdown">
+              <p><span>Solar</span><strong id="annual-bd-solar">—</strong></p>
+              <p><span id="annual-bd-util-label">Utility leftover</span><strong id="annual-bd-util">—</strong></p>
+            </div>
           </div>
         </div>
 
@@ -228,9 +232,13 @@
             <span>04</span>
             Monthly cost
           </div>
-          <div class="cell solar">
+          <div class="cell solar" id="monthly-solar-cell">
             <p class="cell-value" id="solar-monthly">—</p>
             <p class="cell-sub" id="monthly-save-sub">average month</p>
+            <div class="cost-breakdown" id="monthly-breakdown">
+              <p><span>Solar</span><strong id="monthly-bd-solar">—</strong></p>
+              <p><span id="monthly-bd-util-label">Utility leftover</span><strong id="monthly-bd-util">—</strong></p>
+            </div>
           </div>
         </div>
       </article>
@@ -243,6 +251,12 @@
             Massachusetts utility rates have been climbing more than <strong>10% annually</strong>
             since 2020. There is no ceiling. Winter spikes, gas markets, and grid upgrades all
             land on the bill — and nothing in a utility tariff stops next year’s increase.
+            <a
+              class="source-link"
+              href="https://nuwattenergy.com/en/massachusetts/electricity-rate-trends-2026"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Source: Massachusetts electricity rate trends</a>
           </p>
           <div class="spark-wrap" aria-hidden="true">
             <svg id="sparkline" viewBox="0 0 320 88" role="img"></svg>
@@ -290,7 +304,7 @@
           </div>
           <div class="hbar">
             <div class="hbar-meta">
-              <span>Solar</span>
+              <span id="horizon-solar-label">Solar</span>
               <strong id="horizon-solar">—</strong>
             </div>
             <div class="hbar-track">
@@ -301,10 +315,10 @@
         <p class="horizon-save" id="horizon-save"></p>
         <p class="disclaimer">
           Comparison uses year-1 costs from the T-chart, then applies 10% annual utility increases
-          (the Massachusetts pace since 2020) versus a 2.99% solar escalator. Past utility increases
-          do not guarantee future rates. Solar cost is expected production × contracted kWh rate and
-          does not include remaining utility minimums or usage the system does not offset.
-          Illustrative — not a savings guarantee.
+          (the Massachusetts pace since 2020) versus a 2.99% solar escalator. If production is below
+          usage, solar-side annual and monthly totals include leftover utility kWh at today’s utility
+          rate; that leftover still escalates at 10% in the 10-year view. Past utility increases do
+          not guarantee future rates. Illustrative — not a savings guarantee.
         </p>
       </section>
     </main>

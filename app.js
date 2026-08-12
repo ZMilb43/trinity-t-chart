@@ -51,6 +51,15 @@ const els = {
   utilMonthly: document.getElementById("util-monthly"),
   solarMonthly: document.getElementById("solar-monthly"),
   monthlySaveSub: document.getElementById("monthly-save-sub"),
+  annualSolarCell: document.getElementById("annual-solar-cell"),
+  monthlySolarCell: document.getElementById("monthly-solar-cell"),
+  annualBdSolar: document.getElementById("annual-bd-solar"),
+  annualBdUtil: document.getElementById("annual-bd-util"),
+  annualBdUtilLabel: document.getElementById("annual-bd-util-label"),
+  monthlyBdSolar: document.getElementById("monthly-bd-solar"),
+  monthlyBdUtil: document.getElementById("monthly-bd-util"),
+  monthlyBdUtilLabel: document.getElementById("monthly-bd-util-label"),
+  horizonSolarLabel: document.getElementById("horizon-solar-label"),
   horizonUtil: document.getElementById("horizon-util"),
   horizonSolar: document.getElementById("horizon-solar"),
   horizonUtilLabel: document.getElementById("horizon-util-label"),
@@ -177,15 +186,24 @@ function renderChart() {
   if (!data.utilityRate || !data.solarRate || !data.utilityKwh || !data.solarKwh) return;
 
   const utilAnnual = data.utilityRate * data.utilityKwh;
-  const solarAnnual = data.solarRate * data.solarKwh;
+  const solarOnlyAnnual = data.solarRate * data.solarKwh;
+  const leftoverKwh = Math.max(data.utilityKwh - data.solarKwh, 0);
+  const leftoverAnnual = leftoverKwh * data.utilityRate;
+  const hasLeftover = leftoverKwh > 0;
+  const solarSideAnnual = solarOnlyAnnual + leftoverAnnual;
   const utilMonthly = utilAnnual / 12;
-  const solarMonthly = solarAnnual / 12;
-  const annualSave = utilAnnual - solarAnnual;
-  const monthlySave = utilMonthly - solarMonthly;
+  const solarOnlyMonthly = solarOnlyAnnual / 12;
+  const leftoverMonthly = leftoverAnnual / 12;
+  const solarSideMonthly = solarSideAnnual / 12;
+  const annualSave = utilAnnual - solarSideAnnual;
+  const monthlySave = utilMonthly - solarSideMonthly;
   const coverage = (data.solarKwh / data.utilityKwh) * 100;
+  const leftoverLabel = `${data.utilityName === "Utility" ? "Utility" : data.utilityName} leftover`;
 
   const util10 = escalatingSum(utilAnnual, UTILITY_ESCALATOR, HORIZON_YEARS);
-  const solar10 = escalatingSum(solarAnnual, SOLAR_ESCALATOR, HORIZON_YEARS);
+  const solar10 =
+    escalatingSum(solarOnlyAnnual, SOLAR_ESCALATOR, HORIZON_YEARS) +
+    escalatingSum(leftoverAnnual, UTILITY_ESCALATOR, HORIZON_YEARS);
   const save10 = util10 - solar10;
   const maxBar = Math.max(util10, solar10);
 
@@ -205,16 +223,40 @@ function renderChart() {
       : `produced each year · ${Math.round(coverage)}% of usage`;
 
   els.utilAnnual.textContent = money(utilAnnual);
-  els.solarAnnual.textContent = money(solarAnnual);
-  els.annualSaveSub.textContent =
-    annualSave > 0 ? `${money(annualSave)} less in year one` : "year one";
+  els.solarAnnual.textContent = money(solarSideAnnual);
+  els.annualSaveSub.textContent = hasLeftover
+    ? annualSave > 0
+      ? `${money(annualSave)} less · solar + leftover utility`
+      : "solar + leftover utility"
+    : annualSave > 0
+      ? `${money(annualSave)} less in year one`
+      : "year one";
 
   els.utilMonthly.textContent = money(utilMonthly);
-  els.solarMonthly.textContent = money(solarMonthly);
-  els.monthlySaveSub.textContent =
-    monthlySave > 0 ? `${money(monthlySave)} less each month` : "average month";
+  els.solarMonthly.textContent = money(solarSideMonthly);
+  els.monthlySaveSub.textContent = hasLeftover
+    ? monthlySave > 0
+      ? `${money(monthlySave)} less · solar + leftover utility`
+      : "solar + leftover utility"
+    : monthlySave > 0
+      ? `${money(monthlySave)} less each month`
+      : "average month";
+
+  els.annualBdSolar.textContent = money(solarOnlyAnnual);
+  els.annualBdUtil.textContent = money(leftoverAnnual);
+  els.annualBdUtilLabel.textContent = leftoverLabel;
+  els.monthlyBdSolar.textContent = money(solarOnlyMonthly);
+  els.monthlyBdUtil.textContent = money(leftoverMonthly);
+  els.monthlyBdUtilLabel.textContent = leftoverLabel;
+
+  [els.annualSolarCell, els.monthlySolarCell].forEach((cell) => {
+    cell.classList.toggle("has-split", hasLeftover);
+    if (hasLeftover) cell.setAttribute("tabindex", "0");
+    else cell.removeAttribute("tabindex");
+  });
 
   els.horizonUtilLabel.textContent = data.utilityName === "Utility" ? "Utility" : data.utilityName;
+  els.horizonSolarLabel.textContent = hasLeftover ? "Solar + leftover utility" : "Solar";
   els.horizonUtil.textContent = money(util10);
   els.horizonSolar.textContent = money(solar10);
   els.horizonSave.textContent =
@@ -316,7 +358,7 @@ els.solarRate.addEventListener("input", () => rateHint(els.solarRate, els.solarR
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools")) return;
+  if (event.target.closest(".present-tools, a, .cell.has-split")) return;
   revealNext();
 });
 

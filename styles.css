@@ -601,6 +601,62 @@ select:focus {
   font-weight: 500;
 }
 
+.cost-breakdown {
+  display: none;
+  gap: 0.2rem;
+  margin: 0.65rem auto 0;
+  padding: 0.55rem 0.7rem 0.5rem;
+  max-width: 16rem;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(11, 31, 42, 0.1);
+}
+
+.cost-breakdown p {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.85rem;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.cost-breakdown strong {
+  font-size: 0.88rem;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.cell.has-split {
+  cursor: pointer;
+}
+
+.cell.has-split:hover .cost-breakdown,
+.cell.has-split:focus-within .cost-breakdown {
+  display: grid;
+}
+
+.cell.has-split:hover .cell-value,
+.cell.has-split:focus-within .cell-value {
+  transform: scale(1.12);
+}
+
+.source-link {
+  display: inline-block;
+  margin-top: 0.65rem;
+  color: var(--accent-deep);
+  font-size: 0.82rem;
+  font-weight: 650;
+  text-underline-offset: 0.18em;
+}
+
+.source-link:hover {
+  color: var(--ink);
+}
+
 .story {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -866,5 +922,9 @@ body.is-walking .tchart-row {
   .horizon {
     box-shadow: none;
     break-inside: avoid;
+  }
+
+  .cell.has-split .cost-breakdown {
+    display: grid;
   }
 }
