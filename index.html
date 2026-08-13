@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=home7" />
+  <link rel="stylesheet" href="styles.css?v=home8" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
@@ -191,12 +191,12 @@
       <p>Trinity Total Home · Massachusetts kitchen-table close</p>
       <details class="api-setup" id="api-setup">
         <summary>API setup</summary>
-        <p>Paste once per iPad. Restrict the Google key to this website. The flyover Worker URL turns on Generate flyover.</p>
+        <p>Paste a Google Maps key once per iPad. Restrict it to this website. Street View and satellite use that key.</p>
         <label class="field">
           <span class="field-label">Google Maps key</span>
           <input id="google-maps-key" type="password" autocomplete="off" spellcheck="false" />
         </label>
-        <label class="field">
+        <label class="field" hidden>
           <span class="field-label">Flyover worker URL</span>
           <input
             id="flyover-worker-url"
@@ -268,15 +268,15 @@
           </figure>
         </div>
 
-        <div class="flyover-actions">
+        <div class="flyover-actions" id="flyover-actions" hidden>
           <button type="button" class="btn-primary" id="generate-flyover" disabled>
             Generate flyover
           </button>
           <p class="flyover-note" id="flyover-note">Flyover unlocks when Imagine is connected.</p>
         </div>
         <p class="flyover-limits">
-          Illustration from Street View, satellite, and the RSA — not a measured 3D model of the roof.
-          Panel layout follows the RSA as a reference, not a survey overlay. Some MA streets have no Street View.
+          Street View, satellite, and the RSA for this home — not a measured 3D model of the roof.
+          Some MA streets have no Street View.
         </p>
         <button type="button" class="text-btn" id="hide-flyover-btn">Hide home view</button>
       </section>
@@ -494,7 +494,13 @@
   </div>
 
   <div class="walk-hint" id="walk-hint" hidden>Tap anywhere to reveal the next line</div>
+  <div class="still-zoom" id="still-zoom" hidden>
+    <figure>
+      <img id="still-zoom-img" alt="" />
+      <figcaption id="still-zoom-cap"></figcaption>
+    </figure>
+  </div>
 
-  <script src="app.js?v=home7"></script>
+  <script src="app.js?v=home8"></script>
 </body>
 </html>

@@ -53,6 +53,9 @@ const els = {
   rsaPlaceholder: document.getElementById("rsa-placeholder"),
   generateFlyover: document.getElementById("generate-flyover"),
   flyoverNote: document.getElementById("flyover-note"),
+  stillZoom: document.getElementById("still-zoom"),
+  stillZoomImg: document.getElementById("still-zoom-img"),
+  stillZoomCap: document.getElementById("still-zoom-cap"),
   utilityName: document.getElementById("utility-name"),
   utilityRate: document.getElementById("utility-rate"),
   utilityKwh: document.getElementById("utility-kwh"),
@@ -278,26 +281,31 @@ function mapsUrl(kind, address, key) {
 }
 
 function showStill(img, placeholder, src, emptyText) {
+  const frame = img.closest(".still-frame");
   img.onload = () => {
     img.hidden = false;
     placeholder.hidden = true;
+    if (frame) frame.classList.add("is-zoomable");
   };
   img.onerror = () => {
     img.removeAttribute("src");
     img.hidden = true;
     placeholder.hidden = false;
     placeholder.textContent = emptyText;
+    if (frame) frame.classList.remove("is-zoomable");
   };
   if (!src) {
     img.removeAttribute("src");
     img.hidden = true;
     placeholder.hidden = false;
     placeholder.textContent = emptyText;
+    if (frame) frame.classList.remove("is-zoomable");
     return;
   }
   placeholder.textContent = "Loading…";
   placeholder.hidden = false;
   img.hidden = true;
+  if (frame) frame.classList.remove("is-zoomable");
   img.src = src;
 }
 
@@ -405,24 +413,8 @@ function renderFlyover() {
     showStill(els.rsaStillImg, els.rsaPlaceholder, "", "RSA design");
   }
 
-  const workerReady = Boolean(keys.workerUrl);
-  els.generateFlyover.disabled = !workerReady || flyoverBusy || !hasHome;
-  if (flyoverBusy) {
-    els.flyoverNote.textContent = "Building the flyover — usually 1 to 3 minutes.";
-  } else if (!workerReady) {
-    els.flyoverNote.textContent = "Flyover unlocks when Imagine is connected.";
-  } else {
-    els.flyoverNote.textContent = "About a dollar per generate. Illustration, not a survey.";
-  }
-
-  if (flyoverVideoUrl) {
-    els.flyoverVideo.src = flyoverVideoUrl;
-    els.flyoverPlayer.hidden = false;
-    els.flyoverStills.hidden = true;
-  } else {
-    els.flyoverPlayer.hidden = true;
-    els.flyoverStills.hidden = false;
-  }
+  els.flyoverPlayer.hidden = true;
+  els.flyoverStills.hidden = false;
 }
 
 function flyoverErrorMessage(error, fallback) {
@@ -845,16 +837,33 @@ els.visualizeBtn.addEventListener("click", () => {
 
 els.hideFlyoverBtn.addEventListener("click", () => {
   flyoverOpen = false;
+  closeStillZoom();
   renderFlyover();
 });
 
-els.generateFlyover.addEventListener("click", () => {
-  generateFlyover();
+function closeStillZoom() {
+  els.stillZoom.hidden = true;
+  els.stillZoomImg.removeAttribute("src");
+}
+
+function openStillZoom(img) {
+  if (!img || img.hidden || !(img.currentSrc || img.src)) return;
+  els.stillZoomImg.src = img.currentSrc || img.src;
+  els.stillZoomImg.alt = img.alt || "";
+  const caption = img.closest("figure") && img.closest("figure").querySelector("figcaption");
+  els.stillZoomCap.textContent = caption ? caption.textContent : "";
+  els.stillZoom.hidden = false;
+}
+
+els.flyoverStills.addEventListener("click", (event) => {
+  const img = event.target.closest(".still-frame.is-zoomable img");
+  if (img) openStillZoom(img);
 });
 
-els.showStillsBtn.addEventListener("click", () => {
-  els.flyoverPlayer.hidden = true;
-  els.flyoverStills.hidden = false;
+els.stillZoom.addEventListener("click", closeStillZoom);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeStillZoom();
 });
 
 ["input", "change"].forEach((evt) => {
@@ -870,7 +879,7 @@ document.querySelectorAll('input[name="utility-escalator"]').forEach((input) => 
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .util-path, .home-flyover, .visualize-wrap")) return;
+  if (event.target.closest(".present-tools, a, .util-path, .home-flyover, .visualize-wrap, .still-zoom")) return;
   revealNext();
 });
 
