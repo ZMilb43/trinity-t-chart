@@ -1,6 +1,6 @@
 /**
  * Trinity T-chart — Grok Imagine flyover proxy
- * Version 4 — upload stills as xAI files (no extra form fields), then reference-to-video.
+ * Version 5 — RSA layout is the authority for panel placement.
  *
  * After editing this file, paste it into the Cloudflare Worker editor
  * and click Save and Deploy. GitHub Pages does not update the Worker.
@@ -10,7 +10,7 @@
  *   GOOGLE_MAPS_KEY  (second Google key, no HTTP-referrer lock)
  */
 
-const VERSION = 4;
+const VERSION = 5;
 
 const ALLOWED_ORIGINS = [
   "https://zmilb43.github.io",
@@ -116,17 +116,22 @@ async function uploadImage(env, image, filename) {
 }
 
 function buildPrompt(hasStreet, hasSatellite, hasRsa) {
-  const parts = ["Cinematic continuous drone shot of this Massachusetts home."];
+  const parts = [
+    "Cinematic continuous drone shot of this specific Massachusetts home.",
+    "Match the real house: same siding, windows, driveway, trees, and roof shape.",
+  ];
   let i = 0;
   if (hasStreet) {
-    parts.push(`Start at curb-level matching the street view in <IMAGE_${i}>.`);
+    parts.push(
+      `Start at curb-level matching the street view in <IMAGE_${i}> as closely as possible.`
+    );
     i += 1;
   } else {
     parts.push("Start at curb level in front of the house.");
   }
   if (hasSatellite) {
     parts.push(
-      `The camera rises and flies up and over the house, ending in an overhead satellite view matching <IMAGE_${i}>.`
+      `The camera rises and flies up and over the house, ending in a nadir overhead view matching the satellite photo in <IMAGE_${i}>.`
     );
     i += 1;
   } else {
@@ -134,7 +139,10 @@ function buildPrompt(hasStreet, hasSatellite, hasRsa) {
   }
   if (hasRsa) {
     parts.push(
-      `As the camera rises, the roof gains the solar panel layout from the RSA design in <IMAGE_${i}>.`
+      `The solar array must match the RSA design in <IMAGE_${i}> as closely as possible.`,
+      `Copy that RSA exactly: same roof faces with panels, same array outlines, same row counts, same panel orientation, same gaps and setbacks, same grouping.`,
+      `Do not add panels the RSA does not show. Do not move arrays to other roof planes. Do not invent a generic solar roof.`,
+      `<IMAGE_${i}> is the authority for every panel. Street and satellite are only for the house and camera path.`
     );
   }
   parts.push(
