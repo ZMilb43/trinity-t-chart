@@ -157,6 +157,16 @@ body {
   grid-column: 1 / -1;
 }
 
+.home-intake-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.05rem 1.1rem;
+}
+
+.identity-lead {
+  margin: -0.35rem 0 1rem;
+}
+
 .panel {
   background: var(--panel);
   backdrop-filter: blur(14px);
@@ -1254,7 +1264,8 @@ body.is-walking [data-step].is-shown {
 
 @media (max-width: 860px) {
   .intake-grid,
-  .story {
+  .story,
+  .home-intake-grid {
     grid-template-columns: 1fr;
   }
 

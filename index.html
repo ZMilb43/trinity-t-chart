@@ -6,11 +6,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Trinity Close" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <title>The Simple Choice | Trinity Total Home</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=e997e5e" />
+  <link rel="stylesheet" href="styles.css?v=home1" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
@@ -37,7 +38,6 @@
       <form id="intake-form" class="intake-grid" autocomplete="off">
         <section class="panel identity">
           <h2>Whose kitchen table?</h2>
-          <p class="hint identity-lead">Name and utility for the T-chart. Address and RSA photo are optional — they add the home stills above the chart.</p>
           <label class="field">
             <span class="field-label">Homeowner name <span class="optional">optional</span></span>
             <input id="customer-name" type="text" placeholder="The Barrett family" enterkeyhint="next" />
@@ -52,26 +52,33 @@
               <option value="Utility">Other / unspecified</option>
             </select>
           </label>
-          <label class="field">
-            <span class="field-label">Home address <span class="optional">optional</span></span>
-            <input
-              id="home-address"
-              type="text"
-              placeholder="12 Maple St, Worcester, MA"
-              enterkeyhint="next"
-              autocomplete="street-address"
-            />
-            <span class="hint">Street, city, MA — used for Street View and satellite.</span>
-          </label>
-          <label class="field rsa-field">
-            <span class="field-label">RSA photo <span class="optional">optional</span></span>
-            <input id="rsa-photo" type="file" accept="image/*" />
-            <span class="hint">Screenshot of the design on the roof.</span>
-            <div class="rsa-preview" id="rsa-preview" hidden>
-              <img id="rsa-preview-img" alt="RSA design preview" />
-              <button type="button" class="text-btn" id="rsa-clear">Remove</button>
-            </div>
-          </label>
+        </section>
+
+        <section class="panel identity home-intake">
+          <h2>This home</h2>
+          <p class="hint identity-lead">Optional. Adds Street View, satellite, and the RSA above the T-chart.</p>
+          <div class="home-intake-grid">
+            <label class="field">
+              <span class="field-label">Home address <span class="optional">optional</span></span>
+              <input
+                id="home-address"
+                type="text"
+                placeholder="12 Maple St, Worcester, MA"
+                enterkeyhint="next"
+                autocomplete="street-address"
+              />
+              <span class="hint">Street, city, MA — used for Street View and satellite.</span>
+            </label>
+            <label class="field rsa-field">
+              <span class="field-label">RSA photo <span class="optional">optional</span></span>
+              <input id="rsa-photo" type="file" accept="image/*" />
+              <span class="hint">Screenshot of the design on the roof.</span>
+              <div class="rsa-preview" id="rsa-preview" hidden>
+                <img id="rsa-preview-img" alt="RSA design preview" />
+                <button type="button" class="text-btn" id="rsa-clear">Remove</button>
+              </div>
+            </label>
+          </div>
         </section>
 
         <section class="panel side-card side-utility">
@@ -483,6 +490,6 @@
 
   <div class="walk-hint" id="walk-hint" hidden>Tap anywhere to reveal the next line</div>
 
-  <script src="app.js?v=e997e5e"></script>
+  <script src="app.js?v=home1"></script>
 </body>
 </html>
