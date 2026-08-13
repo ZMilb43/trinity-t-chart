@@ -1,6 +1,6 @@
 /**
  * Trinity T-chart — Grok Imagine flyover proxy
- * Version 3 — uploads stills to xAI Files API, then reference-to-video.
+ * Version 4 — upload stills as xAI files (no extra form fields), then reference-to-video.
  *
  * After editing this file, paste it into the Cloudflare Worker editor
  * and click Save and Deploy. GitHub Pages does not update the Worker.
@@ -10,7 +10,7 @@
  *   GOOGLE_MAPS_KEY  (second Google key, no HTTP-referrer lock)
  */
 
-const VERSION = 3;
+const VERSION = 4;
 
 const ALLOWED_ORIGINS = [
   "https://zmilb43.github.io",
@@ -59,18 +59,22 @@ function mimeFromContentType(type) {
   return "";
 }
 
-function extensionFor(mime) {
-  if (mime === "image/png") return "png";
-  if (mime === "image/webp") return "webp";
-  return "jpg";
-}
-
 function mapsUrl(kind, address, key) {
   const loc = encodeURIComponent(address);
   if (kind === "street") {
     return `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${loc}&fov=80&key=${encodeURIComponent(key)}`;
   }
   return `https://maps.googleapis.com/maps/api/staticmap?center=${loc}&zoom=20&maptype=satellite&size=640x400&key=${encodeURIComponent(key)}`;
+}
+
+async function fetchImageBytes(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not fetch image (${res.status})`);
+  const mime = mimeFromContentType(res.headers.get("content-type") || "image/jpeg");
+  if (!mime) throw new Error("Not an image");
+  const buf = await res.arrayBuffer();
+  if (buf.byteLength < 32) throw new Error("Image too small");
+  return { bytes: buf, mime };
 }
 
 function dataUriToBytes(uri) {
@@ -88,39 +92,14 @@ function dataUriToBytes(uri) {
   return { bytes, mime };
 }
 
-async function fetchImageBytes(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Could not fetch image (${res.status})`);
-  const mime = mimeFromContentType(res.headers.get("content-type") || "image/jpeg");
-  if (!mime) throw new Error("Not an image");
-  const buf = await res.arrayBuffer();
-  if (buf.byteLength < 32) throw new Error("Image too small");
-  return { bytes: buf, mime };
-}
-
-async function resolveImageBytes(preferred, fallbackUrl) {
-  if (preferred && preferred.startsWith("data:")) {
-    const fromData = dataUriToBytes(preferred);
-    if (fromData) return fromData;
-  }
-  const urls = [preferred, fallbackUrl].filter(
-    (url) => url && !String(url).startsWith("data:")
-  );
-  const unique = [...new Set(urls)];
-  for (const url of unique) {
-    try {
-      return await fetchImageBytes(url);
-    } catch {
-      /* try the next candidate */
-    }
-  }
-  return null;
+function normalizeFileId(id) {
+  const raw = String(id || "").trim();
+  if (!raw) return "";
+  return raw.startsWith("file_") ? raw : `file_${raw}`;
 }
 
 async function uploadImage(env, image, filename) {
   const form = new FormData();
-  form.append("purpose", "assistants");
-  form.append("expires_after", "3600");
   form.append("file", new Blob([image.bytes], { type: image.mime }), filename);
   const res = await fetch("https://api.x.ai/v1/files", {
     method: "POST",
@@ -129,23 +108,23 @@ async function uploadImage(env, image, filename) {
   });
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(xaiError(data, "Could not upload a reference image."));
+    throw new Error(xaiError(data, `Could not upload ${filename}.`));
   }
-  const id = data.id || data.file_id;
-  if (!id) throw new Error("xAI did not return a file id.");
+  const id = normalizeFileId(data.id || data.file_id);
+  if (!id) throw new Error(`xAI did not return a file id for ${filename}.`);
   return id;
 }
 
-function buildPrompt(street, satellite, rsa) {
+function buildPrompt(hasStreet, hasSatellite, hasRsa) {
   const parts = ["Cinematic continuous drone shot of this Massachusetts home."];
   let i = 0;
-  if (street) {
+  if (hasStreet) {
     parts.push(`Start at curb-level matching the street view in <IMAGE_${i}>.`);
     i += 1;
   } else {
     parts.push("Start at curb level in front of the house.");
   }
-  if (satellite) {
+  if (hasSatellite) {
     parts.push(
       `The camera rises and flies up and over the house, ending in an overhead satellite view matching <IMAGE_${i}>.`
     );
@@ -153,7 +132,7 @@ function buildPrompt(street, satellite, rsa) {
   } else {
     parts.push("The camera rises and flies up and over the house to a nadir overhead view.");
   }
-  if (rsa) {
+  if (hasRsa) {
     parts.push(
       `As the camera rises, the roof gains the solar panel layout from the RSA design in <IMAGE_${i}>.`
     );
@@ -166,34 +145,71 @@ function buildPrompt(street, satellite, rsa) {
 
 async function handleGenerate(request, env) {
   if (!env.XAI_API_KEY) {
-    return json(request, { error: "XAI_API_KEY is not set on the Worker." }, 500);
+    return json(request, { error: "XAI_API_KEY is not set on the Worker.", step: "config" }, 500);
   }
 
   const body = await request.json();
   const address = (body.address || "").trim();
   const googleKey = env.GOOGLE_MAPS_KEY || "";
 
-  const streetFallback = googleKey && address ? mapsUrl("street", address, googleKey) : "";
-  const satFallback = googleKey && address ? mapsUrl("satellite", address, googleKey) : "";
-
-  const street = await resolveImageBytes(body.streetUrl || body.street, streetFallback);
-  const satellite = await resolveImageBytes(body.satelliteUrl || body.satellite, satFallback);
-  const rsa = await resolveImageBytes(body.rsa, "");
+  let street = null;
+  let satellite = null;
+  if (googleKey && address) {
+    try {
+      street = await fetchImageBytes(mapsUrl("street", address, googleKey));
+    } catch {
+      street = null;
+    }
+    try {
+      satellite = await fetchImageBytes(mapsUrl("satellite", address, googleKey));
+    } catch {
+      satellite = null;
+    }
+  }
+  const rsa = dataUriToBytes(body.rsa || "");
 
   const slots = [
-    street && { image: street, name: `street.${extensionFor(street.mime)}` },
-    satellite && { image: satellite, name: `satellite.${extensionFor(satellite.mime)}` },
-    rsa && { image: rsa, name: `rsa.${extensionFor(rsa.mime)}` },
+    street && { image: street, name: street.mime === "image/png" ? "street.png" : "street.jpg" },
+    satellite && {
+      image: satellite,
+      name: satellite.mime === "image/png" ? "satellite.png" : "satellite.jpg",
+    },
+    rsa && { image: rsa, name: rsa.mime === "image/png" ? "rsa.png" : "rsa.jpg" },
   ].filter(Boolean);
 
   if (!slots.length) {
-    return json(request, { error: "Need a Street View, satellite, or RSA image." }, 400);
+    return json(
+      request,
+      {
+        error:
+          "Need an address (for Street View/satellite) or an RSA photo. Confirm GOOGLE_MAPS_KEY is on the Worker.",
+        step: "images",
+      },
+      400
+    );
   }
 
-  const fileIds = [];
+  const reference_images = [];
   for (const slot of slots) {
-    fileIds.push(await uploadImage(env, slot.image, slot.name));
+    try {
+      reference_images.push({ file_id: await uploadImage(env, slot.image, slot.name) });
+    } catch (error) {
+      return json(
+        request,
+        { error: `Upload ${slot.name}: ${error.message}`, step: "upload" },
+        500
+      );
+    }
   }
+
+  const payload = {
+    model: "grok-imagine-video-1.5",
+    prompt: buildPrompt(Boolean(street), Boolean(satellite), Boolean(rsa)),
+    duration: 10,
+    aspect_ratio: "16:9",
+    resolution: "720p",
+    reference_images,
+  };
 
   const response = await fetch("https://api.x.ai/v1/videos/generations", {
     method: "POST",
@@ -201,24 +217,21 @@ async function handleGenerate(request, env) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${env.XAI_API_KEY}`,
     },
-    body: JSON.stringify({
-      model: "grok-imagine-video-1.5",
-      prompt: buildPrompt(street, satellite, rsa),
-      duration: 10,
-      aspect_ratio: "16:9",
-      resolution: "720p",
-      reference_images: fileIds.map((file_id) => ({ file_id })),
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await response.json();
   if (!response.ok) {
-    return json(request, { error: xaiError(data, "xAI did not start the video.") }, response.status);
+    return json(
+      request,
+      { error: `Imagine: ${xaiError(data, "xAI did not start the video.")}`, step: "imagine" },
+      response.status
+    );
   }
 
   const requestId = data.request_id || data.requestId;
   if (!requestId) {
-    return json(request, { error: "xAI did not return a request id." }, 502);
+    return json(request, { error: "xAI did not return a request id.", step: "imagine" }, 502);
   }
 
   return json(request, { requestId, status: data.status || "pending" });
@@ -226,19 +239,23 @@ async function handleGenerate(request, env) {
 
 async function handleStatus(request, env) {
   if (!env.XAI_API_KEY) {
-    return json(request, { error: "XAI_API_KEY is not set on the Worker." }, 500);
+    return json(request, { error: "XAI_API_KEY is not set on the Worker.", step: "config" }, 500);
   }
 
   const body = await request.json();
   const requestId = body.requestId || body.request_id;
-  if (!requestId) return json(request, { error: "Missing requestId." }, 400);
+  if (!requestId) return json(request, { error: "Missing requestId.", step: "status" }, 400);
 
   const response = await fetch(`https://api.x.ai/v1/videos/${encodeURIComponent(requestId)}`, {
     headers: { Authorization: `Bearer ${env.XAI_API_KEY}` },
   });
   const data = await response.json();
   if (!response.ok) {
-    return json(request, { error: xaiError(data, "Could not read flyover status.") }, response.status);
+    return json(
+      request,
+      { error: `Status: ${xaiError(data, "Could not read flyover status.")}`, step: "status" },
+      response.status
+    );
   }
 
   const status = data.status || "pending";
@@ -252,8 +269,6 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
-
     if (request.method === "GET") {
       return json(request, { ok: true, service: "trinity-flyover" });
     }
@@ -261,6 +276,8 @@ export default {
     if (request.method !== "POST") {
       return json(request, { error: "POST only." }, 405);
     }
+
+    const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
 
     try {
       if (path.endsWith("/generate") || path === "/" || path === "/flyover") {
@@ -271,7 +288,7 @@ export default {
       }
       return json(request, { error: "Not found. Use /generate or /status." }, 404);
     } catch (error) {
-      return json(request, { error: error.message || "Worker error." }, 500);
+      return json(request, { error: error.message || "Worker error.", step: "worker" }, 500);
     }
   },
 };

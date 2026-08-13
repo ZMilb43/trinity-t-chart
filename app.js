@@ -469,7 +469,7 @@ async function generateFlyover() {
       }),
     });
     const started = await readJsonResponse(start);
-    if (started.v !== 3) {
+    if (started.v !== 4) {
       throw new Error(
         "This Worker is an older copy. In Cloudflare, paste the latest worker/flyover.js and Save and Deploy."
       );
