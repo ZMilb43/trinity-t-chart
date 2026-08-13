@@ -209,8 +209,8 @@ body {
 }
 
 .addons-present {
-  margin: 1.35rem 0 0;
-  padding: 1.3rem 1.25rem 1.25rem;
+  margin: 0 0 0.85rem;
+  padding: 0.85rem 1.1rem 0.95rem;
   background: var(--panel);
   backdrop-filter: blur(14px);
   border: 1px solid var(--line);
@@ -222,18 +222,16 @@ body {
   display: none;
 }
 
-.addons-present-title {
-  margin: 0.3rem 0 0.45rem;
-  font-family: var(--display);
-  font-size: clamp(1.55rem, 3.2vw, 2.1rem);
-  font-weight: 400;
-  letter-spacing: -0.02em;
+.addons-present-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
 }
 
-.addons-present-lead {
-  margin: 0 0 1rem;
-  color: var(--ink-soft);
-  max-width: 38rem;
+.addons-present-bar .story-kicker {
+  margin: 0;
 }
 
 .addon-present-pills {
@@ -272,8 +270,8 @@ body {
 
 .addon-present-lines {
   display: grid;
-  gap: 0.35rem;
-  margin-top: 0.95rem;
+  gap: 0.25rem;
+  margin-top: 0.7rem;
 }
 
 .addon-present-lines p {
@@ -286,9 +284,9 @@ body {
 }
 
 .addon-present-monthly {
-  margin: 0.85rem 0 0;
+  margin: 0.55rem 0 0;
   font-family: var(--display);
-  font-size: clamp(1.25rem, 2.6vw, 1.7rem);
+  font-size: clamp(1.1rem, 2.2vw, 1.45rem);
   letter-spacing: -0.02em;
   color: var(--accent-deep);
 }

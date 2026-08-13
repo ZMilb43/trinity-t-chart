@@ -694,7 +694,7 @@ function renderAddonsPresent(data, live) {
         ? `New Trinity monthly: ${money(live.solarSideMonthly)} vs utility ${money(live.utilMonthly)} — ${money(vs)} less.`
         : `New Trinity monthly: ${money(live.solarSideMonthly)} vs utility ${money(live.utilMonthly)}.`;
   } else if (canRoof || canBattery) {
-    els.addonPresentMonthly.textContent = "Solar only for now. Tap a product to add it to the monthly.";
+    els.addonPresentMonthly.textContent = "Solar only. Tap a product to add it to the T-chart.";
   } else {
     els.addonPresentMonthly.textContent = "";
   }
