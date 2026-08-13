@@ -5,7 +5,11 @@
  */
 
 const STORAGE_KEY = "trinity-tchart-v1";
+const KEYS_STORAGE = "trinity-tchart-keys";
+const RSA_STORAGE = "trinity-tchart-rsa";
 const HORIZON_YEARS = 10;
+const RSA_MAX_EDGE = 1600;
+const RSA_JPEG_QUALITY = 0.82;
 
 /** Illustrative 10% annual climb from a 2020 baseline — matches the MA sales narrative. */
 const MA_RATES = [
@@ -23,6 +27,29 @@ const els = {
   chart: document.getElementById("screen-chart"),
   form: document.getElementById("intake-form"),
   name: document.getElementById("customer-name"),
+  address: document.getElementById("home-address"),
+  rsaPhoto: document.getElementById("rsa-photo"),
+  rsaPreview: document.getElementById("rsa-preview"),
+  rsaPreviewImg: document.getElementById("rsa-preview-img"),
+  rsaClear: document.getElementById("rsa-clear"),
+  googleKey: document.getElementById("google-maps-key"),
+  workerUrl: document.getElementById("flyover-worker-url"),
+  saveKeysBtn: document.getElementById("save-keys-btn"),
+  keysStatus: document.getElementById("keys-status"),
+  homeFlyover: document.getElementById("home-flyover"),
+  flyoverAddress: document.getElementById("flyover-address"),
+  flyoverPlayer: document.getElementById("flyover-player"),
+  flyoverVideo: document.getElementById("flyover-video"),
+  showStillsBtn: document.getElementById("show-stills-btn"),
+  flyoverStills: document.getElementById("flyover-stills"),
+  streetImg: document.getElementById("street-img"),
+  streetPlaceholder: document.getElementById("street-placeholder"),
+  satelliteImg: document.getElementById("satellite-img"),
+  satellitePlaceholder: document.getElementById("satellite-placeholder"),
+  rsaStillImg: document.getElementById("rsa-still-img"),
+  rsaPlaceholder: document.getElementById("rsa-placeholder"),
+  generateFlyover: document.getElementById("generate-flyover"),
+  flyoverNote: document.getElementById("flyover-note"),
   utilityName: document.getElementById("utility-name"),
   utilityRate: document.getElementById("utility-rate"),
   utilityKwh: document.getElementById("utility-kwh"),
@@ -85,7 +112,11 @@ const els = {
 
 let walking = false;
 let walkIndex = 0;
-const stepNodes = () => [...document.querySelectorAll("#screen-chart [data-step]")];
+let rsaDataUrl = null;
+let flyoverVideoUrl = null;
+let flyoverBusy = false;
+const stepNodes = () =>
+  [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
 function selectedEscalator() {
   const checked = document.querySelector('input[name="solar-escalator"]:checked');
@@ -195,6 +226,243 @@ function rateHint(input, hintEl) {
   hintEl.textContent = rate ? `${centsLabel(rate)} / kWh` : "$/kWh";
 }
 
+function loadKeys() {
+  try {
+    const raw = localStorage.getItem(KEYS_STORAGE);
+    if (!raw) return { googleKey: "", workerUrl: "" };
+    const data = JSON.parse(raw);
+    return {
+      googleKey: (data.googleKey || "").trim(),
+      workerUrl: (data.workerUrl || "").trim().replace(/\/$/, ""),
+    };
+  } catch {
+    return { googleKey: "", workerUrl: "" };
+  }
+}
+
+function saveKeys() {
+  const googleKey = els.googleKey.value.trim();
+  const workerUrl = els.workerUrl.value.trim().replace(/\/$/, "");
+  localStorage.setItem(KEYS_STORAGE, JSON.stringify({ googleKey, workerUrl }));
+  els.keysStatus.textContent = "Saved on this device.";
+  renderFlyover();
+}
+
+function fillKeyFields() {
+  const keys = loadKeys();
+  els.googleKey.value = keys.googleKey;
+  els.workerUrl.value = keys.workerUrl;
+}
+
+function mapsUrl(kind, address, key) {
+  const loc = encodeURIComponent(address);
+  if (kind === "street") {
+    return `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${loc}&fov=80&key=${encodeURIComponent(key)}`;
+  }
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${loc}&zoom=20&maptype=satellite&size=640x400&key=${encodeURIComponent(key)}`;
+}
+
+function showStill(img, placeholder, src, emptyText) {
+  img.onload = () => {
+    img.hidden = false;
+    placeholder.hidden = true;
+  };
+  img.onerror = () => {
+    img.removeAttribute("src");
+    img.hidden = true;
+    placeholder.hidden = false;
+    placeholder.textContent = emptyText;
+  };
+  if (!src) {
+    img.removeAttribute("src");
+    img.hidden = true;
+    placeholder.hidden = false;
+    placeholder.textContent = emptyText;
+    return;
+  }
+  placeholder.textContent = "Loading…";
+  placeholder.hidden = false;
+  img.hidden = true;
+  img.src = src;
+}
+
+function setRsaPreview(dataUrl) {
+  rsaDataUrl = dataUrl || null;
+  if (rsaDataUrl) {
+    els.rsaPreviewImg.src = rsaDataUrl;
+    els.rsaPreview.hidden = false;
+    try {
+      sessionStorage.setItem(RSA_STORAGE, rsaDataUrl);
+    } catch {
+      /* quota — keep in memory only */
+    }
+  } else {
+    els.rsaPreviewImg.removeAttribute("src");
+    els.rsaPreview.hidden = true;
+    els.rsaPhoto.value = "";
+    try {
+      sessionStorage.removeItem(RSA_STORAGE);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function loadRsa() {
+  try {
+    const stored = sessionStorage.getItem(RSA_STORAGE);
+    if (stored) setRsaPreview(stored);
+  } catch {
+    /* ignore */
+  }
+}
+
+function fileToResizedDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read that photo."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, RSA_MAX_EDGE / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", RSA_JPEG_QUALITY));
+      };
+      img.onerror = () => reject(new Error("That file is not a usable image."));
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderFlyover() {
+  const address = els.address.value.trim();
+  const keys = loadKeys();
+  const hasHome = Boolean(address || rsaDataUrl);
+  els.homeFlyover.hidden = !hasHome;
+  if (!hasHome) {
+    flyoverVideoUrl = null;
+    els.flyoverPlayer.hidden = true;
+    els.flyoverStills.hidden = false;
+    return;
+  }
+
+  els.flyoverAddress.textContent = address || "RSA design for this proposal";
+
+  if (keys.googleKey && address) {
+    showStill(
+      els.streetImg,
+      els.streetPlaceholder,
+      mapsUrl("street", address, keys.googleKey),
+      "No street photo for this address."
+    );
+    showStill(
+      els.satelliteImg,
+      els.satellitePlaceholder,
+      mapsUrl("satellite", address, keys.googleKey),
+      "Satellite needs a working Google Maps key."
+    );
+  } else {
+    showStill(
+      els.streetImg,
+      els.streetPlaceholder,
+      "",
+      address ? "Add a Google Maps key in API setup to load Street View." : "Street View"
+    );
+    showStill(
+      els.satelliteImg,
+      els.satellitePlaceholder,
+      "",
+      address ? "Add a Google Maps key in API setup to load satellite." : "Satellite"
+    );
+  }
+
+  if (rsaDataUrl) {
+    showStill(els.rsaStillImg, els.rsaPlaceholder, rsaDataUrl, "RSA design");
+  } else {
+    showStill(els.rsaStillImg, els.rsaPlaceholder, "", "RSA design");
+  }
+
+  const workerReady = Boolean(keys.workerUrl);
+  els.generateFlyover.disabled = !workerReady || flyoverBusy || !hasHome;
+  if (flyoverBusy) {
+    els.flyoverNote.textContent = "Building the flyover — usually 1 to 3 minutes.";
+  } else if (!workerReady) {
+    els.flyoverNote.textContent = "Flyover unlocks when Imagine is connected.";
+  } else {
+    els.flyoverNote.textContent = "About a dollar per generate. Illustration, not a survey.";
+  }
+
+  if (flyoverVideoUrl) {
+    els.flyoverVideo.src = flyoverVideoUrl;
+    els.flyoverPlayer.hidden = false;
+    els.flyoverStills.hidden = true;
+  } else {
+    els.flyoverPlayer.hidden = true;
+    els.flyoverStills.hidden = false;
+  }
+}
+
+async function generateFlyover() {
+  const keys = loadKeys();
+  const address = els.address.value.trim();
+  if (!keys.workerUrl || flyoverBusy) return;
+
+  flyoverBusy = true;
+  els.generateFlyover.disabled = true;
+  els.flyoverNote.textContent = "Building the flyover — usually 1 to 3 minutes.";
+
+  try {
+    const start = await fetch(`${keys.workerUrl}/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address,
+        rsa: rsaDataUrl,
+        streetUrl:
+          keys.googleKey && address ? mapsUrl("street", address, keys.googleKey) : "",
+        satelliteUrl:
+          keys.googleKey && address ? mapsUrl("satellite", address, keys.googleKey) : "",
+      }),
+    });
+    const started = await start.json();
+    if (!start.ok) throw new Error(started.error || "Could not start the flyover.");
+    const requestId = started.requestId;
+    if (!requestId) throw new Error("No request id from the flyover service.");
+
+    const deadline = Date.now() + 4 * 60 * 1000;
+    while (Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      const poll = await fetch(`${keys.workerUrl}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
+      const status = await poll.json();
+      if (!poll.ok) throw new Error(status.error || "Flyover status failed.");
+      if (status.status === "done" && status.url) {
+        flyoverVideoUrl = status.url;
+        flyoverBusy = false;
+        renderFlyover();
+        return;
+      }
+      if (status.status === "expired" || status.status === "failed") {
+        throw new Error("The flyover did not finish. Try again.");
+      }
+    }
+    throw new Error("Timed out waiting for the flyover.");
+  } catch (error) {
+    els.flyoverNote.textContent = error.message || "Flyover failed.";
+  } finally {
+    flyoverBusy = false;
+    const keysNow = loadKeys();
+    els.generateFlyover.disabled = !keysNow.workerUrl;
+  }
+}
+
 function readInputs() {
   const utilityRate = parseRate(els.utilityRate.value);
   const solarRate = parseRate(els.solarRate.value);
@@ -210,6 +478,7 @@ function readInputs() {
     solarKwh: Number.isFinite(solarKwh) ? solarKwh : 0,
     solarEscalator: selectedEscalator(),
     utilityEscalator: selectedUtilityEscalator(),
+    address: els.address.value.trim(),
   };
 }
 
@@ -225,6 +494,7 @@ function saveInputs() {
       solarKwh: els.solarKwh.value,
       solarEscalator: selectedEscalator(),
       utilityEscalator: selectedUtilityEscalator(),
+      address: els.address.value,
     })
   );
 }
@@ -242,6 +512,7 @@ function loadInputs() {
     els.solarKwh.value = data.solarKwh || "";
     if (data.solarEscalator != null) setEscalator(String(data.solarEscalator));
     if (data.utilityEscalator != null) setUtilityEscalator(data.utilityEscalator);
+    els.address.value = data.address || "";
   } catch {
     /* ignore */
   }
@@ -417,6 +688,7 @@ function showScreen(name) {
   if (presenting) {
     renderChart();
     drawSparkline();
+    renderFlyover();
   } else {
     setWalking(false);
   }
@@ -485,6 +757,39 @@ els.walkBtn.addEventListener("click", () => {
 els.utilityRate.addEventListener("input", () => rateHint(els.utilityRate, els.utilityRateHint));
 els.solarRate.addEventListener("input", () => rateHint(els.solarRate, els.solarRateHint));
 
+els.rsaPhoto.addEventListener("change", async () => {
+  const file = els.rsaPhoto.files && els.rsaPhoto.files[0];
+  if (!file) return;
+  try {
+    const dataUrl = await fileToResizedDataUrl(file);
+    flyoverVideoUrl = null;
+    setRsaPreview(dataUrl);
+  } catch (error) {
+    els.rsaPhoto.value = "";
+    window.alert(error.message || "Could not use that photo.");
+  }
+});
+
+els.rsaClear.addEventListener("click", () => {
+  flyoverVideoUrl = null;
+  setRsaPreview(null);
+});
+
+els.address.addEventListener("input", () => {
+  flyoverVideoUrl = null;
+});
+
+els.saveKeysBtn.addEventListener("click", saveKeys);
+
+els.generateFlyover.addEventListener("click", () => {
+  generateFlyover();
+});
+
+els.showStillsBtn.addEventListener("click", () => {
+  els.flyoverPlayer.hidden = true;
+  els.flyoverStills.hidden = false;
+});
+
 ["input", "change"].forEach((evt) => {
   els.form.addEventListener(evt, saveInputs);
 });
@@ -498,7 +803,7 @@ document.querySelectorAll('input[name="utility-escalator"]').forEach((input) => 
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .util-path")) return;
+  if (event.target.closest(".present-tools, a, .util-path, .home-flyover")) return;
   revealNext();
 });
 
@@ -516,6 +821,8 @@ document.addEventListener("keydown", (event) => {
 });
 
 loadInputs();
+fillKeyFields();
+loadRsa();
 rateHint(els.utilityRate, els.utilityRateHint);
 rateHint(els.solarRate, els.solarRateHint);
 drawSparkline();

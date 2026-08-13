@@ -1,0 +1,7 @@
+name = "trinity-flyover"
+main = "flyover.js"
+compatibility_date = "2026-08-12"
+
+# Secrets (never commit these):
+#   wrangler secret put XAI_API_KEY
+#   wrangler secret put GOOGLE_MAPS_KEY

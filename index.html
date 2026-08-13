@@ -51,6 +51,26 @@
               <option value="Utility">Other / unspecified</option>
             </select>
           </label>
+          <label class="field">
+            <span class="field-label">Home address <span class="optional">optional</span></span>
+            <input
+              id="home-address"
+              type="text"
+              placeholder="12 Maple St, Worcester, MA"
+              enterkeyhint="next"
+              autocomplete="street-address"
+            />
+            <span class="hint">Street, city, MA — used for Street View and satellite.</span>
+          </label>
+          <label class="field rsa-field">
+            <span class="field-label">RSA photo <span class="optional">optional</span></span>
+            <input id="rsa-photo" type="file" accept="image/*" />
+            <span class="hint">Screenshot of the design on the roof.</span>
+            <div class="rsa-preview" id="rsa-preview" hidden>
+              <img id="rsa-preview-img" alt="RSA design preview" />
+              <button type="button" class="text-btn" id="rsa-clear">Remove</button>
+            </div>
+          </label>
         </section>
 
         <section class="panel side-card side-utility">
@@ -161,6 +181,27 @@
 
     <footer class="site-footer">
       <p>Trinity Total Home · Massachusetts kitchen-table close</p>
+      <details class="api-setup" id="api-setup">
+        <summary>API setup</summary>
+        <p>Paste once per iPad. Restrict the Google key to this website. The flyover Worker URL turns on Generate flyover.</p>
+        <label class="field">
+          <span class="field-label">Google Maps key</span>
+          <input id="google-maps-key" type="password" autocomplete="off" spellcheck="false" />
+        </label>
+        <label class="field">
+          <span class="field-label">Flyover worker URL</span>
+          <input
+            id="flyover-worker-url"
+            type="url"
+            inputmode="url"
+            placeholder="https://trinity-flyover.your-name.workers.dev"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </label>
+        <button type="button" class="text-btn" id="save-keys-btn">Save on this device</button>
+        <p class="hint" id="keys-status"></p>
+      </details>
     </footer>
   </div>
 
@@ -180,6 +221,52 @@
     <main class="present">
       <p class="prepared-for" id="prepared-for"></p>
       <h1 class="present-title">Two paths. <em>One easy choice.</em></h1>
+
+      <section class="home-flyover" id="home-flyover" data-step="0" hidden>
+        <p class="story-kicker">This home</p>
+        <h2 class="flyover-heading">Your roof. Your design.</h2>
+        <p class="flyover-address" id="flyover-address"></p>
+
+        <div class="flyover-player" id="flyover-player" hidden>
+          <video id="flyover-video" controls playsinline></video>
+          <button type="button" class="text-btn" id="show-stills-btn">Show stills</button>
+        </div>
+
+        <div class="flyover-stills" id="flyover-stills">
+          <figure>
+            <div class="still-frame">
+              <img id="street-img" alt="Street View of the home" hidden />
+              <p class="still-placeholder" id="street-placeholder">Street View</p>
+            </div>
+            <figcaption>Street View</figcaption>
+          </figure>
+          <figure>
+            <div class="still-frame">
+              <img id="satellite-img" alt="Satellite view of the home" hidden />
+              <p class="still-placeholder" id="satellite-placeholder">Satellite</p>
+            </div>
+            <figcaption>Satellite</figcaption>
+          </figure>
+          <figure>
+            <div class="still-frame">
+              <img id="rsa-still-img" alt="RSA solar design" hidden />
+              <p class="still-placeholder" id="rsa-placeholder">RSA design</p>
+            </div>
+            <figcaption>RSA design</figcaption>
+          </figure>
+        </div>
+
+        <div class="flyover-actions">
+          <button type="button" class="btn-primary" id="generate-flyover" disabled>
+            Generate flyover
+          </button>
+          <p class="flyover-note" id="flyover-note">Flyover unlocks when Imagine is connected.</p>
+        </div>
+        <p class="flyover-limits">
+          Illustration from Street View, satellite, and the RSA — not a measured 3D model of the roof.
+          Panel layout follows the RSA as a reference, not a survey overlay. Some MA streets have no Street View.
+        </p>
+      </section>
 
       <article class="tchart" id="tchart" aria-label="Utility versus solar comparison">
         <div class="tchart-head">

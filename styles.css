@@ -309,6 +309,8 @@ body {
 
 input[type="text"],
 input[type="number"],
+input[type="password"],
+input[type="url"],
 select {
   width: 100%;
   appearance: none;
@@ -430,6 +432,58 @@ select:focus {
   font-size: 0.85rem;
 }
 
+.rsa-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+}
+
+.rsa-preview[hidden] {
+  display: none;
+}
+
+.rsa-preview img {
+  width: 5.5rem;
+  height: 5.5rem;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+input[type="file"] {
+  width: 100%;
+  font: inherit;
+  font-size: 0.92rem;
+}
+
+.api-setup {
+  margin-top: 1.1rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.api-setup summary {
+  cursor: pointer;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.api-setup p {
+  margin: 0.55rem 0 0.85rem;
+  max-width: 36rem;
+}
+
+.api-setup .field {
+  margin-bottom: 0.75rem;
+}
+
+.api-setup .hint {
+  margin: 0.55rem 0 0;
+}
+
 /* ── Presentation ── */
 #screen-chart {
   padding-bottom: calc(2rem + var(--safe-bottom));
@@ -454,6 +508,137 @@ select:focus {
 
 .present-title {
   margin: 0.2rem 0 1.25rem;
+}
+
+.home-flyover {
+  margin: 0 0 1.25rem;
+  padding: 1.25rem 1.2rem 1.2rem;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.home-flyover[hidden] {
+  display: none;
+}
+
+.flyover-heading {
+  margin: 0.3rem 0 0.35rem;
+  font-family: var(--display);
+  font-size: clamp(1.55rem, 3.2vw, 2.1rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.flyover-address {
+  margin: 0 0 1rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.flyover-stills {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.flyover-stills figure {
+  margin: 0;
+}
+
+.still-frame {
+  position: relative;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--ink) 6%, #fff);
+}
+
+.still-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.still-frame img[hidden] {
+  display: none;
+}
+
+.still-placeholder {
+  margin: 0;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0.75rem;
+  text-align: center;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.still-placeholder[hidden] {
+  display: none;
+}
+
+.flyover-stills figcaption {
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.flyover-player {
+  margin-bottom: 1rem;
+}
+
+.flyover-player[hidden] {
+  display: none;
+}
+
+.flyover-player video {
+  width: 100%;
+  border-radius: 14px;
+  background: #0b1f2a;
+  display: block;
+}
+
+.flyover-player .text-btn {
+  margin-top: 0.65rem;
+}
+
+.flyover-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-top: 1rem;
+}
+
+.flyover-actions .btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.flyover-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.flyover-limits {
+  margin: 0.85rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  line-height: 1.45;
 }
 
 .tchart {
@@ -1133,6 +1318,10 @@ body.is-walking [data-step].is-shown {
   .present-title {
     font-size: clamp(1.7rem, 8vw, 2.3rem);
     margin-bottom: 0.95rem;
+  }
+
+  .flyover-stills {
+    grid-template-columns: 1fr;
   }
 
   .tchart-head {
