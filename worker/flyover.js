@@ -1,17 +1,16 @@
 /**
  * Trinity T-chart — Grok Imagine flyover proxy
+ * Version 3 — uploads stills to xAI Files API, then reference-to-video.
  *
- * Deploy later (does nothing until you do):
- *   1. npm i -g wrangler
- *   2. wrangler login
- *   3. cd worker
- *   4. wrangler secret put XAI_API_KEY
- *   5. wrangler secret put GOOGLE_MAPS_KEY   (optional; used if the page cannot send stills)
- *   6. wrangler deploy
- *   7. Paste the workers.dev URL into API setup on page 1
+ * After editing this file, paste it into the Cloudflare Worker editor
+ * and click Save and Deploy. GitHub Pages does not update the Worker.
  *
- * Never put XAI_API_KEY in the GitHub Pages JavaScript.
+ * Secrets (Worker → Settings → Variables and secrets):
+ *   XAI_API_KEY
+ *   GOOGLE_MAPS_KEY  (second Google key, no HTTP-referrer lock)
  */
+
+const VERSION = 3;
 
 const ALLOWED_ORIGINS = [
   "https://zmilb43.github.io",
@@ -21,28 +20,19 @@ const ALLOWED_ORIGINS = [
   "http://127.0.0.1:5500",
 ];
 
-const FLYOVER_PROMPT = [
-  "Cinematic continuous drone shot of this Massachusetts home.",
-  "Start at curb-level matching the street view in <IMAGE_0>.",
-  "The camera rises and flies up and over the house, ending in an overhead satellite view matching <IMAGE_1>.",
-  "As the camera rises, the roof gains the solar panel layout from the RSA design in <IMAGE_2>.",
-  "Photorealistic suburban home, natural daylight, no text, no logos, no watermarks,",
-  "smooth camera move from eye level to nadir.",
-].join(" ");
-
 function corsHeaders(request) {
   const origin = request.headers.get("Origin") || "";
   const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     "Access-Control-Allow-Origin": allow,
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
     "Access-Control-Max-Age": "86400",
   };
 }
 
 function json(request, body, status = 200) {
-  return new Response(JSON.stringify(body), {
+  return new Response(JSON.stringify({ v: VERSION, ...body }), {
     status,
     headers: {
       "Content-Type": "application/json",
@@ -51,22 +41,28 @@ function json(request, body, status = 200) {
   });
 }
 
-function arrayBufferToBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
+function xaiError(data, fallback) {
+  if (typeof data?.error === "string") return data.error;
+  if (typeof data?.error?.message === "string") return data.error.message;
+  if (typeof data?.message === "string") return data.message;
+  return fallback;
 }
 
-async function fetchAsDataUri(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Could not fetch image (${res.status})`);
-  const type = res.headers.get("content-type") || "image/jpeg";
-  const buf = await res.arrayBuffer();
-  return `data:${type};base64,${arrayBufferToBase64(buf)}`;
+function mimeFromContentType(type) {
+  const raw = String(type || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (raw === "image/jpg" || raw === "image/jpeg") return "image/jpeg";
+  if (raw === "image/png") return "image/png";
+  if (raw === "image/webp") return "image/webp";
+  return "";
+}
+
+function extensionFor(mime) {
+  if (mime === "image/png") return "png";
+  if (mime === "image/webp") return "webp";
+  return "jpg";
 }
 
 function mapsUrl(kind, address, key) {
@@ -77,16 +73,95 @@ function mapsUrl(kind, address, key) {
   return `https://maps.googleapis.com/maps/api/staticmap?center=${loc}&zoom=20&maptype=satellite&size=640x400&key=${encodeURIComponent(key)}`;
 }
 
-async function resolveImage(preferred, fallbackUrl) {
-  if (preferred && preferred.startsWith("data:")) return preferred;
-  const url = preferred || fallbackUrl;
-  if (!url) return "";
-  if (url.startsWith("data:")) return url;
-  try {
-    return await fetchAsDataUri(url);
-  } catch {
-    return "";
+function dataUriToBytes(uri) {
+  if (!uri || !uri.startsWith("data:")) return null;
+  const comma = uri.indexOf(",");
+  if (comma < 0) return null;
+  const mime = mimeFromContentType(uri.slice(5, comma));
+  if (!mime) return null;
+  const payload = uri.slice(comma + 1).replace(/\s/g, "");
+  if (!payload) return null;
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  if (bytes.byteLength < 32) return null;
+  return { bytes, mime };
+}
+
+async function fetchImageBytes(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Could not fetch image (${res.status})`);
+  const mime = mimeFromContentType(res.headers.get("content-type") || "image/jpeg");
+  if (!mime) throw new Error("Not an image");
+  const buf = await res.arrayBuffer();
+  if (buf.byteLength < 32) throw new Error("Image too small");
+  return { bytes: buf, mime };
+}
+
+async function resolveImageBytes(preferred, fallbackUrl) {
+  if (preferred && preferred.startsWith("data:")) {
+    const fromData = dataUriToBytes(preferred);
+    if (fromData) return fromData;
   }
+  const urls = [preferred, fallbackUrl].filter(
+    (url) => url && !String(url).startsWith("data:")
+  );
+  const unique = [...new Set(urls)];
+  for (const url of unique) {
+    try {
+      return await fetchImageBytes(url);
+    } catch {
+      /* try the next candidate */
+    }
+  }
+  return null;
+}
+
+async function uploadImage(env, image, filename) {
+  const form = new FormData();
+  form.append("purpose", "assistants");
+  form.append("expires_after", "3600");
+  form.append("file", new Blob([image.bytes], { type: image.mime }), filename);
+  const res = await fetch("https://api.x.ai/v1/files", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env.XAI_API_KEY}` },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(xaiError(data, "Could not upload a reference image."));
+  }
+  const id = data.id || data.file_id;
+  if (!id) throw new Error("xAI did not return a file id.");
+  return id;
+}
+
+function buildPrompt(street, satellite, rsa) {
+  const parts = ["Cinematic continuous drone shot of this Massachusetts home."];
+  let i = 0;
+  if (street) {
+    parts.push(`Start at curb-level matching the street view in <IMAGE_${i}>.`);
+    i += 1;
+  } else {
+    parts.push("Start at curb level in front of the house.");
+  }
+  if (satellite) {
+    parts.push(
+      `The camera rises and flies up and over the house, ending in an overhead satellite view matching <IMAGE_${i}>.`
+    );
+    i += 1;
+  } else {
+    parts.push("The camera rises and flies up and over the house to a nadir overhead view.");
+  }
+  if (rsa) {
+    parts.push(
+      `As the camera rises, the roof gains the solar panel layout from the RSA design in <IMAGE_${i}>.`
+    );
+  }
+  parts.push(
+    "Photorealistic suburban home, natural daylight, no text, no logos, no watermarks, smooth camera move from eye level to nadir."
+  );
+  return parts.join(" ");
 }
 
 async function handleGenerate(request, env) {
@@ -101,16 +176,24 @@ async function handleGenerate(request, env) {
   const streetFallback = googleKey && address ? mapsUrl("street", address, googleKey) : "";
   const satFallback = googleKey && address ? mapsUrl("satellite", address, googleKey) : "";
 
-  const street = await resolveImage(body.streetUrl || body.street, streetFallback);
-  const satellite = await resolveImage(body.satelliteUrl || body.satellite, satFallback);
-  const rsa = await resolveImage(body.rsa, "");
+  const street = await resolveImageBytes(body.streetUrl || body.street, streetFallback);
+  const satellite = await resolveImageBytes(body.satelliteUrl || body.satellite, satFallback);
+  const rsa = await resolveImageBytes(body.rsa, "");
 
-  const references = [street, satellite, rsa].filter(Boolean);
-  if (!references.length) {
+  const slots = [
+    street && { image: street, name: `street.${extensionFor(street.mime)}` },
+    satellite && { image: satellite, name: `satellite.${extensionFor(satellite.mime)}` },
+    rsa && { image: rsa, name: `rsa.${extensionFor(rsa.mime)}` },
+  ].filter(Boolean);
+
+  if (!slots.length) {
     return json(request, { error: "Need a Street View, satellite, or RSA image." }, 400);
   }
 
-  const prompt = FLYOVER_PROMPT;
+  const fileIds = [];
+  for (const slot of slots) {
+    fileIds.push(await uploadImage(env, slot.image, slot.name));
+  }
 
   const response = await fetch("https://api.x.ai/v1/videos/generations", {
     method: "POST",
@@ -120,21 +203,17 @@ async function handleGenerate(request, env) {
     },
     body: JSON.stringify({
       model: "grok-imagine-video-1.5",
-      prompt,
+      prompt: buildPrompt(street, satellite, rsa),
       duration: 10,
       aspect_ratio: "16:9",
       resolution: "720p",
-      reference_image_urls: references,
+      reference_images: fileIds.map((file_id) => ({ file_id })),
     }),
   });
 
   const data = await response.json();
   if (!response.ok) {
-    return json(
-      request,
-      { error: data.error?.message || data.error || "xAI did not start the video." },
-      response.status
-    );
+    return json(request, { error: xaiError(data, "xAI did not start the video.") }, response.status);
   }
 
   const requestId = data.request_id || data.requestId;
@@ -159,11 +238,7 @@ async function handleStatus(request, env) {
   });
   const data = await response.json();
   if (!response.ok) {
-    return json(
-      request,
-      { error: data.error?.message || data.error || "Could not read flyover status." },
-      response.status
-    );
+    return json(request, { error: xaiError(data, "Could not read flyover status.") }, response.status);
   }
 
   const status = data.status || "pending";
@@ -176,11 +251,16 @@ export default {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
+
+    const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
+
+    if (request.method === "GET") {
+      return json(request, { ok: true, service: "trinity-flyover" });
+    }
+
     if (request.method !== "POST") {
       return json(request, { error: "POST only." }, 405);
     }
-
-    const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
 
     try {
       if (path.endsWith("/generate") || path === "/" || path === "/flyover") {

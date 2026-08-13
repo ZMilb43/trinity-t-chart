@@ -230,6 +230,16 @@ function rateHint(input, hintEl) {
   hintEl.textContent = rate ? `${centsLabel(rate)} / kWh` : "$/kWh";
 }
 
+function normalizeWorkerUrl(raw) {
+  let url = String(raw || "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .trim()
+    .replace(/\s+/g, "");
+  if (!url) return "";
+  if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+  return url.replace(/\/+$/, "");
+}
+
 function loadKeys() {
   try {
     const raw = localStorage.getItem(KEYS_STORAGE);
@@ -237,7 +247,7 @@ function loadKeys() {
     const data = JSON.parse(raw);
     return {
       googleKey: (data.googleKey || "").trim(),
-      workerUrl: (data.workerUrl || "").trim().replace(/\/$/, ""),
+      workerUrl: normalizeWorkerUrl(data.workerUrl),
     };
   } catch {
     return { googleKey: "", workerUrl: "" };
@@ -246,8 +256,9 @@ function loadKeys() {
 
 function saveKeys() {
   const googleKey = els.googleKey.value.trim();
-  const workerUrl = els.workerUrl.value.trim().replace(/\/$/, "");
+  const workerUrl = normalizeWorkerUrl(els.workerUrl.value);
   localStorage.setItem(KEYS_STORAGE, JSON.stringify({ googleKey, workerUrl }));
+  els.workerUrl.value = workerUrl;
   els.keysStatus.textContent = "Saved on this device.";
   renderFlyover();
 }
@@ -414,10 +425,35 @@ function renderFlyover() {
   }
 }
 
+function flyoverErrorMessage(error, fallback) {
+  if (!error) return fallback;
+  if (typeof error === "string") return error;
+  if (typeof error.message === "string") return error.message;
+  return fallback;
+}
+
+async function readJsonResponse(res) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      text.includes("Hello")
+        ? "The Worker is still Hello World. Paste worker/flyover.js in Cloudflare and deploy."
+        : "The flyover service did not return JSON. Re-paste worker/flyover.js in Cloudflare."
+    );
+  }
+}
+
 async function generateFlyover() {
   const keys = loadKeys();
   const address = els.address.value.trim();
   if (!keys.workerUrl || flyoverBusy) return;
+  if (!/^https:\/\/[a-z0-9.-]+\.workers\.dev$/i.test(keys.workerUrl)) {
+    els.flyoverNote.textContent =
+      "Worker URL should look like https://trinity-flyover.zmlb43.workers.dev — paste it from Cloudflare, then Save.";
+    return;
+  }
 
   flyoverBusy = true;
   els.generateFlyover.disabled = true;
@@ -430,14 +466,17 @@ async function generateFlyover() {
       body: JSON.stringify({
         address,
         rsa: rsaDataUrl,
-        streetUrl:
-          keys.googleKey && address ? mapsUrl("street", address, keys.googleKey) : "",
-        satelliteUrl:
-          keys.googleKey && address ? mapsUrl("satellite", address, keys.googleKey) : "",
       }),
     });
-    const started = await start.json();
-    if (!start.ok) throw new Error(started.error || "Could not start the flyover.");
+    const started = await readJsonResponse(start);
+    if (started.v !== 3) {
+      throw new Error(
+        "This Worker is an older copy. In Cloudflare, paste the latest worker/flyover.js and Save and Deploy."
+      );
+    }
+    if (!start.ok) {
+      throw new Error(flyoverErrorMessage(started.error, "Could not start the flyover."));
+    }
     const requestId = started.requestId;
     if (!requestId) throw new Error("No request id from the flyover service.");
 
@@ -449,8 +488,10 @@ async function generateFlyover() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestId }),
       });
-      const status = await poll.json();
-      if (!poll.ok) throw new Error(status.error || "Flyover status failed.");
+      const status = await readJsonResponse(poll);
+      if (!poll.ok) {
+        throw new Error(flyoverErrorMessage(status.error, "Flyover status failed."));
+      }
       if (status.status === "done" && status.url) {
         flyoverVideoUrl = status.url;
         flyoverBusy = false;
@@ -463,7 +504,13 @@ async function generateFlyover() {
     }
     throw new Error("Timed out waiting for the flyover.");
   } catch (error) {
-    els.flyoverNote.textContent = error.message || "Flyover failed.";
+    const message = error && error.message ? error.message : "";
+    if (error instanceof TypeError || /Failed to fetch|Load failed|NetworkError/i.test(message)) {
+      els.flyoverNote.textContent =
+        "Could not reach the Worker. Open API setup, paste https://trinity-flyover.zmlb43.workers.dev from Cloudflare, and Save.";
+    } else {
+      els.flyoverNote.textContent = message || "Flyover failed.";
+    }
   } finally {
     flyoverBusy = false;
     const keysNow = loadKeys();
