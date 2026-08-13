@@ -520,6 +520,14 @@ input[type="file"] {
   margin: 0.2rem 0 1.25rem;
 }
 
+.visualize-wrap {
+  margin: -0.35rem 0 1.25rem;
+}
+
+.visualize-wrap[hidden] {
+  display: none;
+}
+
 .home-flyover {
   margin: 0 0 1.25rem;
   padding: 1.25rem 1.2rem 1.2rem;
@@ -649,6 +657,10 @@ input[type="file"] {
   font-size: 0.72rem;
   color: var(--ink-soft);
   line-height: 1.45;
+}
+
+#hide-flyover-btn {
+  margin-top: 0.85rem;
 }
 
 .tchart {

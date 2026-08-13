@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=home1" />
+  <link rel="stylesheet" href="styles.css?v=home2" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
@@ -230,6 +230,10 @@
       <p class="prepared-for" id="prepared-for"></p>
       <h1 class="present-title">Two paths. <em>One easy choice.</em></h1>
 
+      <div class="visualize-wrap" id="visualize-wrap" hidden>
+        <button type="button" class="btn-primary" id="visualize-btn">Visualize the future</button>
+      </div>
+
       <section class="home-flyover" id="home-flyover" data-step="0" hidden>
         <p class="story-kicker">This home</p>
         <h2 class="flyover-heading">Your roof. Your design.</h2>
@@ -274,6 +278,7 @@
           Illustration from Street View, satellite, and the RSA — not a measured 3D model of the roof.
           Panel layout follows the RSA as a reference, not a survey overlay. Some MA streets have no Street View.
         </p>
+        <button type="button" class="text-btn" id="hide-flyover-btn">Hide home view</button>
       </section>
 
       <article class="tchart" id="tchart" aria-label="Utility versus solar comparison">
@@ -490,6 +495,6 @@
 
   <div class="walk-hint" id="walk-hint" hidden>Tap anywhere to reveal the next line</div>
 
-  <script src="app.js?v=home1"></script>
+  <script src="app.js?v=home2"></script>
 </body>
 </html>

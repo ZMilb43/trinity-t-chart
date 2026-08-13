@@ -37,6 +37,9 @@ const els = {
   saveKeysBtn: document.getElementById("save-keys-btn"),
   keysStatus: document.getElementById("keys-status"),
   homeFlyover: document.getElementById("home-flyover"),
+  visualizeWrap: document.getElementById("visualize-wrap"),
+  visualizeBtn: document.getElementById("visualize-btn"),
+  hideFlyoverBtn: document.getElementById("hide-flyover-btn"),
   flyoverAddress: document.getElementById("flyover-address"),
   flyoverPlayer: document.getElementById("flyover-player"),
   flyoverVideo: document.getElementById("flyover-video"),
@@ -115,6 +118,7 @@ let walkIndex = 0;
 let rsaDataUrl = null;
 let flyoverVideoUrl = null;
 let flyoverBusy = false;
+let flyoverOpen = false;
 const stepNodes = () =>
   [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
@@ -342,13 +346,17 @@ function renderFlyover() {
   const address = els.address.value.trim();
   const keys = loadKeys();
   const hasHome = Boolean(address || rsaDataUrl);
-  els.homeFlyover.hidden = !hasHome;
+  if (!hasHome) flyoverOpen = false;
+
+  els.visualizeWrap.hidden = !hasHome || flyoverOpen;
+  els.homeFlyover.hidden = !hasHome || !flyoverOpen;
   if (!hasHome) {
     flyoverVideoUrl = null;
     els.flyoverPlayer.hidden = true;
     els.flyoverStills.hidden = false;
     return;
   }
+  if (!flyoverOpen) return;
 
   els.flyoverAddress.textContent = address || "RSA design for this proposal";
 
@@ -686,6 +694,7 @@ function showScreen(name) {
   document.body.classList.toggle("presenting", presenting);
   window.scrollTo(0, 0);
   if (presenting) {
+    flyoverOpen = false;
     renderChart();
     drawSparkline();
     renderFlyover();
@@ -781,6 +790,17 @@ els.address.addEventListener("input", () => {
 
 els.saveKeysBtn.addEventListener("click", saveKeys);
 
+els.visualizeBtn.addEventListener("click", () => {
+  flyoverOpen = true;
+  renderFlyover();
+  els.homeFlyover.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+els.hideFlyoverBtn.addEventListener("click", () => {
+  flyoverOpen = false;
+  renderFlyover();
+});
+
 els.generateFlyover.addEventListener("click", () => {
   generateFlyover();
 });
@@ -803,7 +823,7 @@ document.querySelectorAll('input[name="utility-escalator"]').forEach((input) => 
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .util-path, .home-flyover")) return;
+  if (event.target.closest(".present-tools, a, .util-path, .home-flyover, .visualize-wrap")) return;
   revealNext();
 });
 
