@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=home10" />
+  <link rel="stylesheet" href="styles.css?v=home11" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
@@ -339,11 +339,6 @@
             </button>
           </div>
         </div>
-        <div class="addon-present-lines">
-          <p id="addon-roofing-line" hidden></p>
-          <p id="addon-battery-line" hidden></p>
-        </div>
-        <p class="addon-present-monthly" id="addon-present-monthly"></p>
       </section>
 
       <article class="tchart" id="tchart" aria-label="Utility versus solar comparison">
@@ -403,40 +398,6 @@
           <div class="cell solar" id="annual-solar-cell">
             <p class="cell-value" id="solar-annual">—</p>
             <p class="cell-sub" id="annual-save-sub">year one</p>
-            <div class="cost-breakdown" id="annual-breakdown">
-              <p>
-                <span>
-                  <span class="bd-name">Solar</span>
-                  <span class="bd-math" id="annual-bd-solar-math"></span>
-                </span>
-                <strong id="annual-bd-solar">—</strong>
-              </p>
-              <p id="annual-bd-util-row">
-                <span>
-                  <span class="bd-name" id="annual-bd-util-label">Utility leftover</span>
-                  <span class="bd-math" id="annual-bd-util-math"></span>
-                </span>
-                <strong id="annual-bd-util">—</strong>
-              </p>
-              <p id="annual-bd-roof-row" hidden>
-                <span>
-                  <span class="bd-name">Roofing</span>
-                  <span class="bd-math">financed</span>
-                </span>
-                <strong id="annual-bd-roof">—</strong>
-              </p>
-              <p id="annual-bd-battery-row" hidden>
-                <span>
-                  <span class="bd-name">Batteries</span>
-                  <span class="bd-math">monthly × 12</span>
-                </span>
-                <strong id="annual-bd-battery">—</strong>
-              </p>
-              <p class="bd-total">
-                <span>Together</span>
-                <strong id="annual-bd-total">—</strong>
-              </p>
-            </div>
           </div>
         </div>
 
@@ -452,40 +413,6 @@
           <div class="cell solar" id="monthly-solar-cell">
             <p class="cell-value" id="solar-monthly">—</p>
             <p class="cell-sub" id="monthly-save-sub">average month</p>
-            <div class="cost-breakdown" id="monthly-breakdown">
-              <p>
-                <span>
-                  <span class="bd-name">Solar</span>
-                  <span class="bd-math" id="monthly-bd-solar-math"></span>
-                </span>
-                <strong id="monthly-bd-solar">—</strong>
-              </p>
-              <p id="monthly-bd-util-row">
-                <span>
-                  <span class="bd-name" id="monthly-bd-util-label">Utility leftover</span>
-                  <span class="bd-math" id="monthly-bd-util-math"></span>
-                </span>
-                <strong id="monthly-bd-util">—</strong>
-              </p>
-              <p id="monthly-bd-roof-row" hidden>
-                <span>
-                  <span class="bd-name">Roofing</span>
-                  <span class="bd-math">financed monthly</span>
-                </span>
-                <strong id="monthly-bd-roof">—</strong>
-              </p>
-              <p id="monthly-bd-battery-row" hidden>
-                <span>
-                  <span class="bd-name">Batteries</span>
-                  <span class="bd-math">monthly</span>
-                </span>
-                <strong id="monthly-bd-battery">—</strong>
-              </p>
-              <p class="bd-total">
-                <span>Together</span>
-                <strong id="monthly-bd-total">—</strong>
-              </p>
-            </div>
           </div>
         </div>
       </article>
@@ -593,7 +520,16 @@
       <figcaption id="still-zoom-cap"></figcaption>
     </figure>
   </div>
+  <div class="cost-pop" id="cost-pop" hidden>
+    <div class="cost-pop-card" role="dialog" aria-modal="true" aria-labelledby="cost-pop-title">
+      <p class="story-kicker" id="cost-pop-kicker">Trinity</p>
+      <h2 id="cost-pop-title">What’s in this number</h2>
+      <div class="cost-breakdown" id="cost-pop-list"></div>
+      <p class="cost-pop-vs" id="cost-pop-vs"></p>
+      <button type="button" class="text-btn" id="cost-pop-close">Close</button>
+    </div>
+  </div>
 
-  <script src="app.js?v=home10"></script>
+  <script src="app.js?v=home11"></script>
 </body>
 </html>
