@@ -96,6 +96,29 @@ const els = {
   monthlyBdSolarMath: document.getElementById("monthly-bd-solar-math"),
   monthlyBdUtilMath: document.getElementById("monthly-bd-util-math"),
   monthlyBdTotal: document.getElementById("monthly-bd-total"),
+  annualBdUtilRow: document.getElementById("annual-bd-util-row"),
+  monthlyBdUtilRow: document.getElementById("monthly-bd-util-row"),
+  annualBdRoofRow: document.getElementById("annual-bd-roof-row"),
+  annualBdRoof: document.getElementById("annual-bd-roof"),
+  annualBdBatteryRow: document.getElementById("annual-bd-battery-row"),
+  annualBdBattery: document.getElementById("annual-bd-battery"),
+  monthlyBdRoofRow: document.getElementById("monthly-bd-roof-row"),
+  monthlyBdRoof: document.getElementById("monthly-bd-roof"),
+  monthlyBdBatteryRow: document.getElementById("monthly-bd-battery-row"),
+  monthlyBdBattery: document.getElementById("monthly-bd-battery"),
+  roofingInclude: document.getElementById("roofing-include"),
+  roofingFields: document.getElementById("roofing-fields"),
+  roofingPrice: document.getElementById("roofing-price"),
+  roofingMonthly: document.getElementById("roofing-monthly"),
+  batteryInclude: document.getElementById("battery-include"),
+  batteryFields: document.getElementById("battery-fields"),
+  batteryMonthly: document.getElementById("battery-monthly"),
+  addonsPresent: document.getElementById("addons-present"),
+  presentRoofingBtn: document.getElementById("present-roofing-btn"),
+  presentBatteryBtn: document.getElementById("present-battery-btn"),
+  addonRoofingLine: document.getElementById("addon-roofing-line"),
+  addonBatteryLine: document.getElementById("addon-battery-line"),
+  addonPresentMonthly: document.getElementById("addon-present-monthly"),
   horizonSolarLabel: document.getElementById("horizon-solar-label"),
   horizonUtil: document.getElementById("horizon-util"),
   horizonSolar: document.getElementById("horizon-solar"),
@@ -122,6 +145,8 @@ let rsaDataUrl = null;
 let flyoverVideoUrl = null;
 let flyoverBusy = false;
 let flyoverOpen = false;
+let presentRoofing = false;
+let presentBattery = false;
 const stepNodes = () =>
   [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
@@ -203,6 +228,11 @@ function capCopy(rate) {
     badgeCopy: "annual increase<br />guaranteed in the agreement",
     foot: "Written into the agreement",
   };
+}
+
+function parseMoney(raw) {
+  const n = Number(String(raw || "").replace(/[$,\s]/g, ""));
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 function parseRate(raw) {
@@ -526,6 +556,11 @@ function readInputs() {
     solarEscalator: selectedEscalator(),
     utilityEscalator: selectedUtilityEscalator(),
     address: els.address.value.trim(),
+    roofingInclude: els.roofingInclude.checked,
+    roofingPrice: parseMoney(els.roofingPrice.value),
+    roofingMonthly: parseMoney(els.roofingMonthly.value),
+    batteryInclude: els.batteryInclude.checked,
+    batteryMonthly: parseMoney(els.batteryMonthly.value),
   };
 }
 
@@ -542,6 +577,11 @@ function saveInputs() {
       solarEscalator: selectedEscalator(),
       utilityEscalator: selectedUtilityEscalator(),
       address: els.address.value,
+      roofingInclude: els.roofingInclude.checked,
+      roofingPrice: els.roofingPrice.value,
+      roofingMonthly: els.roofingMonthly.value,
+      batteryInclude: els.batteryInclude.checked,
+      batteryMonthly: els.batteryMonthly.value,
     })
   );
 }
@@ -560,9 +600,28 @@ function loadInputs() {
     if (data.solarEscalator != null) setEscalator(String(data.solarEscalator));
     if (data.utilityEscalator != null) setUtilityEscalator(data.utilityEscalator);
     els.address.value = data.address || "";
+    els.roofingInclude.checked = Boolean(data.roofingInclude);
+    els.roofingPrice.value = data.roofingPrice || "";
+    els.roofingMonthly.value = data.roofingMonthly || "";
+    els.batteryInclude.checked = Boolean(data.batteryInclude);
+    els.batteryMonthly.value = data.batteryMonthly || "";
+    syncAddonFields();
   } catch {
     /* ignore */
   }
+}
+
+function syncAddonFields() {
+  els.roofingFields.hidden = !els.roofingInclude.checked;
+  els.batteryFields.hidden = !els.batteryInclude.checked;
+}
+
+function quotedRoofing(data) {
+  return Boolean(data.roofingInclude && data.roofingMonthly > 0);
+}
+
+function quotedBattery(data) {
+  return Boolean(data.batteryInclude && data.batteryMonthly > 0);
 }
 
 function escalatingSum(yearOne, rate, years) {
@@ -603,6 +662,44 @@ function kwhTimesRate(kwhValue, rate) {
   return `${Math.round(kwhValue).toLocaleString("en-US")} kWh × ${centsLabel(rate)}`;
 }
 
+function renderAddonsPresent(data, live) {
+  const canRoof = quotedRoofing(data);
+  const canBattery = quotedBattery(data);
+  els.addonsPresent.hidden = !canRoof && !canBattery;
+  els.presentRoofingBtn.hidden = !canRoof;
+  els.presentBatteryBtn.hidden = !canBattery;
+  els.presentRoofingBtn.setAttribute("aria-pressed", String(live.roofingOn));
+  els.presentBatteryBtn.setAttribute("aria-pressed", String(live.batteryOn));
+
+  if (canRoof) {
+    els.addonRoofingLine.hidden = !live.roofingOn;
+    els.addonRoofingLine.textContent = data.roofingPrice
+      ? `Roof ${money(data.roofingPrice)} · ${money(data.roofingMonthly)} / month`
+      : `Roof ${money(data.roofingMonthly)} / month`;
+  } else {
+    els.addonRoofingLine.hidden = true;
+  }
+
+  if (canBattery) {
+    els.addonBatteryLine.hidden = !live.batteryOn;
+    els.addonBatteryLine.textContent = `Batteries ${money(data.batteryMonthly)} / month`;
+  } else {
+    els.addonBatteryLine.hidden = true;
+  }
+
+  if (live.roofingOn || live.batteryOn) {
+    const vs = live.utilMonthly - live.solarSideMonthly;
+    els.addonPresentMonthly.textContent =
+      vs > 0
+        ? `New Trinity monthly: ${money(live.solarSideMonthly)} vs utility ${money(live.utilMonthly)} — ${money(vs)} less.`
+        : `New Trinity monthly: ${money(live.solarSideMonthly)} vs utility ${money(live.utilMonthly)}.`;
+  } else if (canRoof || canBattery) {
+    els.addonPresentMonthly.textContent = "Solar only for now. Tap a product to add it to the monthly.";
+  } else {
+    els.addonPresentMonthly.textContent = "";
+  }
+}
+
 function renderChart() {
   const data = readInputs();
   if (!data.utilityRate || !data.solarRate || !data.utilityKwh || !data.solarKwh) return;
@@ -612,12 +709,18 @@ function renderChart() {
 
   const solarOnlyAnnual = Math.round(data.solarRate * data.solarKwh);
   const leftoverAnnual = Math.round(leftoverKwh * data.utilityRate);
-  const solarSideAnnual = solarOnlyAnnual + leftoverAnnual;
   const utilAnnual = Math.round(data.utilityRate * data.utilityKwh);
 
   const solarOnlyMonthly = Math.round(solarOnlyAnnual / 12);
   const leftoverMonthly = Math.round(leftoverAnnual / 12);
-  const solarSideMonthly = solarOnlyMonthly + leftoverMonthly;
+  const roofingOn = presentRoofing && quotedRoofing(data);
+  const batteryOn = presentBattery && quotedBattery(data);
+  const roofingMonthly = roofingOn ? Math.round(data.roofingMonthly) : 0;
+  const batteryMonthly = batteryOn ? Math.round(data.batteryMonthly) : 0;
+  const roofingAnnual = roofingMonthly * 12;
+  const batteryAnnual = batteryMonthly * 12;
+  const solarSideMonthly = solarOnlyMonthly + leftoverMonthly + roofingMonthly + batteryMonthly;
+  const solarSideAnnual = solarOnlyAnnual + leftoverAnnual + roofingAnnual + batteryAnnual;
   const utilMonthly = Math.round(utilAnnual / 12);
 
   const annualSave = utilAnnual - solarSideAnnual;
@@ -628,11 +731,19 @@ function renderChart() {
   const utilityEscalator = data.utilityEscalator;
   const cap = capCopy(solarEscalator);
   const utilPath = utilityPathCopy(utilityEscalator);
+  const extraBits = [
+    hasLeftover ? "leftover utility" : "",
+    roofingOn ? "roof" : "",
+    batteryOn ? "batteries" : "",
+  ].filter(Boolean);
+  const extraLabel = extraBits.length ? extraBits.join(" + ") : "";
 
   const util10 = escalatingSum(utilAnnual, utilityEscalator, HORIZON_YEARS);
   const solar10 =
     escalatingSum(solarOnlyAnnual, solarEscalator, HORIZON_YEARS) +
-    escalatingSum(leftoverAnnual, utilityEscalator, HORIZON_YEARS);
+    escalatingSum(leftoverAnnual, utilityEscalator, HORIZON_YEARS) +
+    roofingAnnual * HORIZON_YEARS +
+    batteryAnnual * HORIZON_YEARS;
   const save10 = util10 - solar10;
   const maxBar = Math.max(util10, solar10);
 
@@ -653,20 +764,20 @@ function renderChart() {
 
   els.utilAnnual.textContent = money(utilAnnual);
   els.solarAnnual.textContent = money(solarSideAnnual);
-  els.annualSaveSub.textContent = hasLeftover
+  els.annualSaveSub.textContent = extraLabel
     ? annualSave > 0
-      ? `${money(annualSave)} less · solar + leftover utility`
-      : "solar + leftover utility"
+      ? `${money(annualSave)} less · solar + ${extraLabel}`
+      : `solar + ${extraLabel}`
     : annualSave > 0
       ? `${money(annualSave)} less in year one`
       : "year one";
 
   els.utilMonthly.textContent = money(utilMonthly);
   els.solarMonthly.textContent = money(solarSideMonthly);
-  els.monthlySaveSub.textContent = hasLeftover
+  els.monthlySaveSub.textContent = extraLabel
     ? monthlySave > 0
-      ? `${money(monthlySave)} less · solar + leftover utility`
-      : "solar + leftover utility"
+      ? `${money(monthlySave)} less · solar + ${extraLabel}`
+      : `solar + ${extraLabel}`
     : monthlySave > 0
       ? `${money(monthlySave)} less each month`
       : "average month";
@@ -685,12 +796,24 @@ function renderChart() {
   els.monthlyBdSolarMath.textContent = `${kwhTimesRate(data.solarKwh, data.solarRate)} ÷ 12`;
   els.monthlyBdUtilMath.textContent = `${kwhTimesRate(leftoverKwh, data.utilityRate)} ÷ 12`;
 
+  els.annualBdUtilRow.hidden = !hasLeftover;
+  els.monthlyBdUtilRow.hidden = !hasLeftover;
+  els.annualBdRoofRow.hidden = !roofingOn;
+  els.monthlyBdRoofRow.hidden = !roofingOn;
+  els.annualBdBatteryRow.hidden = !batteryOn;
+  els.monthlyBdBatteryRow.hidden = !batteryOn;
+  els.annualBdRoof.textContent = money(roofingAnnual);
+  els.monthlyBdRoof.textContent = money(roofingMonthly);
+  els.annualBdBattery.textContent = money(batteryAnnual);
+  els.monthlyBdBattery.textContent = money(batteryMonthly);
+
+  const showSplit = hasLeftover || roofingOn || batteryOn;
   [els.annualSolarCell, els.monthlySolarCell].forEach((cell) => {
-    cell.classList.toggle("has-split", hasLeftover);
+    cell.classList.toggle("has-split", showSplit);
   });
 
   els.horizonUtilLabel.textContent = data.utilityName === "Utility" ? "Utility" : data.utilityName;
-  els.horizonSolarLabel.textContent = hasLeftover ? "Solar + leftover utility" : "Solar";
+  els.horizonSolarLabel.textContent = extraLabel ? `Solar + ${extraLabel}` : "Solar";
   els.horizonUtil.textContent = money(util10);
   els.horizonSolar.textContent = money(solar10);
   els.horizonSave.textContent =
@@ -712,7 +835,17 @@ function renderChart() {
     `versus a ${capLabel(solarEscalator)} solar escalator. ` +
     `If production is below usage, solar-side annual and monthly totals include leftover utility ` +
     `kWh at today’s utility rate; that leftover still escalates at ${utilPath.leftover} in the 10-year view. ` +
+    `Roofing and battery add-ons, when turned on, use the financed monthly × 12 with no escalator. ` +
     `Past utility increases do not guarantee future rates. Illustrative — not a savings guarantee.`;
+
+  renderAddonsPresent(data, {
+    roofingOn,
+    batteryOn,
+    roofingMonthly,
+    batteryMonthly,
+    solarSideMonthly,
+    utilMonthly,
+  });
 
   els.hbarUtil.style.width = "0%";
   els.hbarSolar.style.width = "0%";
@@ -734,6 +867,8 @@ function showScreen(name) {
   window.scrollTo(0, 0);
   if (presenting) {
     flyoverOpen = false;
+    presentRoofing = false;
+    presentBattery = false;
     renderChart();
     drawSparkline();
     renderFlyover();
@@ -792,6 +927,12 @@ els.sampleBtn.addEventListener("click", () => {
   els.solarRate.value = "0.189";
   els.solarKwh.value = "11200";
   setEscalator("0.0299");
+  els.roofingInclude.checked = true;
+  els.roofingPrice.value = "28500";
+  els.roofingMonthly.value = "219";
+  els.batteryInclude.checked = true;
+  els.batteryMonthly.value = "95";
+  syncAddonFields();
   rateHint(els.utilityRate, els.utilityRateHint);
   rateHint(els.solarRate, els.solarRateHint);
 });
@@ -866,6 +1007,19 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeStillZoom();
 });
 
+els.roofingInclude.addEventListener("change", syncAddonFields);
+els.batteryInclude.addEventListener("change", syncAddonFields);
+
+els.presentRoofingBtn.addEventListener("click", () => {
+  presentRoofing = !presentRoofing;
+  renderChart();
+});
+
+els.presentBatteryBtn.addEventListener("click", () => {
+  presentBattery = !presentBattery;
+  renderChart();
+});
+
 ["input", "change"].forEach((evt) => {
   els.form.addEventListener(evt, saveInputs);
 });
@@ -879,7 +1033,7 @@ document.querySelectorAll('input[name="utility-escalator"]').forEach((input) => 
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .util-path, .home-flyover, .visualize-wrap, .still-zoom")) return;
+  if (event.target.closest(".present-tools, a, .util-path, .home-flyover, .visualize-wrap, .still-zoom, .addons-present")) return;
   revealNext();
 });
 
@@ -899,6 +1053,7 @@ document.addEventListener("keydown", (event) => {
 loadInputs();
 fillKeyFields();
 loadRsa();
+syncAddonFields();
 rateHint(els.utilityRate, els.utilityRateHint);
 rateHint(els.solarRate, els.solarRateHint);
 drawSparkline();

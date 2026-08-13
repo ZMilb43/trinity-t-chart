@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=home8" />
+  <link rel="stylesheet" href="styles.css?v=home9" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
@@ -175,6 +175,52 @@
             </div>
             <span class="hint">2.99% is most common. Pick the cap in this proposal.</span>
           </fieldset>
+        </section>
+
+        <section class="panel addons-intake">
+          <h2>Roofing &amp; batteries</h2>
+          <p class="hint identity-lead">Optional. Enter the numbers now. On the T-chart you can turn them on at the end of the close.</p>
+          <div class="addons-intake-grid">
+            <div class="addon-block">
+              <label class="addon-check">
+                <input type="checkbox" id="roofing-include" />
+                <span>Roofing</span>
+              </label>
+              <div class="addon-fields" id="roofing-fields" hidden>
+                <label class="field">
+                  <span class="field-label">Total contract price</span>
+                  <div class="input-with-unit">
+                    <input id="roofing-price" type="text" inputmode="decimal" placeholder="28500" />
+                    <span class="unit">$</span>
+                  </div>
+                </label>
+                <label class="field">
+                  <span class="field-label">Monthly payment</span>
+                  <div class="input-with-unit">
+                    <input id="roofing-monthly" type="text" inputmode="decimal" placeholder="219" />
+                    <span class="unit">$/mo</span>
+                  </div>
+                  <span class="hint">Typically financed.</span>
+                </label>
+              </div>
+            </div>
+            <div class="addon-block">
+              <label class="addon-check">
+                <input type="checkbox" id="battery-include" />
+                <span>Batteries</span>
+              </label>
+              <div class="addon-fields" id="battery-fields" hidden>
+                <label class="field">
+                  <span class="field-label">Monthly payment</span>
+                  <div class="input-with-unit">
+                    <input id="battery-monthly" type="text" inputmode="decimal" placeholder="95" />
+                    <span class="unit">$/mo</span>
+                  </div>
+                  <span class="hint">Financed or as a monthly adder.</span>
+                </label>
+              </div>
+            </div>
+          </div>
         </section>
 
         <div class="intake-actions">
@@ -346,12 +392,26 @@
                 </span>
                 <strong id="annual-bd-solar">—</strong>
               </p>
-              <p>
+              <p id="annual-bd-util-row">
                 <span>
                   <span class="bd-name" id="annual-bd-util-label">Utility leftover</span>
                   <span class="bd-math" id="annual-bd-util-math"></span>
                 </span>
                 <strong id="annual-bd-util">—</strong>
+              </p>
+              <p id="annual-bd-roof-row" hidden>
+                <span>
+                  <span class="bd-name">Roofing</span>
+                  <span class="bd-math">financed</span>
+                </span>
+                <strong id="annual-bd-roof">—</strong>
+              </p>
+              <p id="annual-bd-battery-row" hidden>
+                <span>
+                  <span class="bd-name">Batteries</span>
+                  <span class="bd-math">monthly × 12</span>
+                </span>
+                <strong id="annual-bd-battery">—</strong>
               </p>
               <p class="bd-total">
                 <span>Together</span>
@@ -381,12 +441,26 @@
                 </span>
                 <strong id="monthly-bd-solar">—</strong>
               </p>
-              <p>
+              <p id="monthly-bd-util-row">
                 <span>
                   <span class="bd-name" id="monthly-bd-util-label">Utility leftover</span>
                   <span class="bd-math" id="monthly-bd-util-math"></span>
                 </span>
                 <strong id="monthly-bd-util">—</strong>
+              </p>
+              <p id="monthly-bd-roof-row" hidden>
+                <span>
+                  <span class="bd-name">Roofing</span>
+                  <span class="bd-math">financed monthly</span>
+                </span>
+                <strong id="monthly-bd-roof">—</strong>
+              </p>
+              <p id="monthly-bd-battery-row" hidden>
+                <span>
+                  <span class="bd-name">Batteries</span>
+                  <span class="bd-math">monthly</span>
+                </span>
+                <strong id="monthly-bd-battery">—</strong>
               </p>
               <p class="bd-total">
                 <span>Together</span>
@@ -490,6 +564,28 @@
           Past utility increases do not guarantee future rates. Illustrative — not a savings guarantee.
         </p>
       </section>
+
+      <section class="addons-present" id="addons-present" data-step="7" hidden>
+        <p class="story-kicker">Add on, if they want them</p>
+        <h2 class="addons-present-title">Roofing and batteries. <em>Same table, extra yes.</em></h2>
+        <p class="addons-present-lead">
+          Solar is the choice you just made. Flip these on only if you’re adding them to this close.
+          The T-chart monthly updates live.
+        </p>
+        <div class="addon-present-pills">
+          <button type="button" id="present-roofing-btn" aria-pressed="false" hidden>
+            Roofing
+          </button>
+          <button type="button" id="present-battery-btn" aria-pressed="false" hidden>
+            Batteries
+          </button>
+        </div>
+        <div class="addon-present-lines">
+          <p id="addon-roofing-line" hidden></p>
+          <p id="addon-battery-line" hidden></p>
+        </div>
+        <p class="addon-present-monthly" id="addon-present-monthly"></p>
+      </section>
     </main>
   </div>
 
@@ -501,6 +597,6 @@
     </figure>
   </div>
 
-  <script src="app.js?v=home8"></script>
+  <script src="app.js?v=home9"></script>
 </body>
 </html>
