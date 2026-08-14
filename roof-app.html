@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Trinity Roof" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <title>The Real Cost of a New Roof | Trinity Total Home</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=roof5" />
+  <link rel="stylesheet" href="roof.css?v=roof5" />
+</head>
+<body class="roof-tool">
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <!-- ───────── Page 1: Intake ───────── -->
+  <div id="screen-input" class="screen is-active" data-screen="input">
+    <header class="site-header">
+      <div>
+        <p class="brand">Trinity Total Home</p>
+        <p class="brand-sub">Solar · Roofing · Battery Backup</p>
+      </div>
+      <p class="tool-chip">Roof net-cost close</p>
+    </header>
+
+    <main class="intake">
+      <section class="hero">
+        <h1>See the <em>real cost</em> of a new roof</h1>
+        <p class="lede">
+          Enter the squares and the price per square. Then walk the homeowner from
+          the contract price to the net cost after value, energy, and insurance.
+        </p>
+      </section>
+
+      <form id="intake-form" class="intake-grid" autocomplete="off">
+        <section class="panel identity">
+          <h2>Whose kitchen table?</h2>
+          <div class="home-intake-grid">
+            <label class="field">
+              <span class="field-label">Homeowner name <span class="optional">optional</span></span>
+              <input id="customer-name" type="text" placeholder="The Barrett family" enterkeyhint="next" />
+            </label>
+            <label class="field">
+              <span class="field-label">Region</span>
+              <select id="region">
+                <option value="new-england" selected>New England</option>
+                <option value="middle-atlantic">Middle Atlantic</option>
+                <option value="south-atlantic">South Atlantic</option>
+                <option value="east-north-central">East North Central</option>
+                <option value="west-north-central">West North Central</option>
+                <option value="east-south-central">East South Central</option>
+                <option value="west-south-central">West South Central</option>
+                <option value="mountain">Mountain</option>
+                <option value="pacific">Pacific</option>
+                <option value="national">National average</option>
+              </select>
+              <span class="hint" id="region-hint"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel side-card side-solar roof-job">
+          <p class="side-kicker">The proposal</p>
+          <h2>IKO Dynasty roof</h2>
+          <p class="hint identity-lead">Architectural Performance system. Squares × price per square is the whole close.</p>
+          <div class="home-intake-grid">
+            <label class="field">
+              <span class="field-label">Roof squares</span>
+              <div class="input-with-unit">
+                <input
+                  id="squares"
+                  type="number"
+                  min="0"
+                  step="any"
+                  inputmode="decimal"
+                  placeholder="26"
+                  required
+                />
+                <span class="unit">sq</span>
+              </div>
+              <span class="hint">One square = 100 sq ft of roof. From the measure or RSA.</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Price per square</span>
+              <div class="input-with-unit">
+                <input
+                  id="price-per-square"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="1095"
+                  required
+                />
+                <span class="unit">$/sq</span>
+              </div>
+              <span class="hint">Installed Dynasty system price for this home.</span>
+            </label>
+          </div>
+          <div class="live-total" id="live-total-card">
+            <p class="live-kicker">Contract price</p>
+            <p class="live-math" id="live-math">Enter squares and price per square</p>
+            <p class="live-amount" id="live-total">—</p>
+            <p class="live-hint">12-month price. Day-of 10% is a toggle after net cost.</p>
+          </div>
+        </section>
+
+        <section class="panel identity home-intake">
+          <h2>This home</h2>
+          <p class="hint identity-lead">Optional. Sharpens insurance math and the story on page 2.</p>
+          <div class="roof-optional-grid">
+            <label class="field">
+              <span class="field-label">Current roof age <span class="optional">optional</span></span>
+              <div class="input-with-unit">
+                <input id="roof-age" type="number" min="0" max="80" step="1" inputmode="numeric" placeholder="22" />
+                <span class="unit">years</span>
+              </div>
+              <span class="hint">Carriers get stricter after 15–20 years.</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Home value <span class="optional">optional</span></span>
+              <div class="input-with-unit">
+                <input id="home-value" type="text" inputmode="decimal" placeholder="625000" />
+                <span class="unit">$</span>
+              </div>
+              <span class="hint">Shown as context next to the value add-back.</span>
+            </label>
+            <label class="field">
+              <span class="field-label">Annual home insurance <span class="optional">optional</span></span>
+              <div class="input-with-unit">
+                <input id="insurance-premium" type="text" inputmode="decimal" placeholder="1850" />
+                <span class="unit">$/yr</span>
+              </div>
+              <span class="hint" id="premium-hint">Leave blank to use the regional average.</span>
+            </label>
+          </div>
+        </section>
+
+        <div class="intake-actions">
+          <button type="button" class="btn-ghost" id="sample-btn">Load a sample MA home</button>
+          <button type="submit" class="btn-primary" id="present-btn">
+            Present the net cost
+            <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </form>
+    </main>
+
+    <footer class="site-footer">
+      <p>Trinity Total Home · IKO Dynasty roofing close · <a href="index.html">Solar T-chart</a></p>
+    </footer>
+  </div>
+
+  <!-- ───────── Page 2: Net cost ───────── -->
+  <div id="screen-chart" class="screen" data-screen="chart" hidden>
+    <header class="present-header">
+      <div class="present-brand">
+        <p class="brand">Trinity Total Home</p>
+        <p class="brand-sub" id="present-kicker">A new Dynasty roof</p>
+      </div>
+      <div class="present-tools">
+        <button type="button" class="text-btn" id="walk-btn" aria-pressed="false">Walk through</button>
+        <button type="button" class="text-btn" id="edit-btn">Edit numbers</button>
+      </div>
+    </header>
+
+    <main class="present">
+      <p class="prepared-for" id="prepared-for"></p>
+      <h1 class="present-title">The price on the proposal. <em>Then what you get back.</em></h1>
+
+      <section class="job-recap">
+        <div class="job-recap-item">
+          <p class="job-recap-label">Squares</p>
+          <p class="job-recap-value" id="recap-squares">—</p>
+        </div>
+        <p class="job-recap-times" aria-hidden="true">×</p>
+        <div class="job-recap-item">
+          <p class="job-recap-label">Per square</p>
+          <p class="job-recap-value" id="recap-pps">—</p>
+        </div>
+        <p class="job-recap-times" aria-hidden="true">=</p>
+        <div class="job-recap-item is-total">
+          <p class="job-recap-label">IKO Dynasty system</p>
+          <p class="job-recap-value" id="recap-total">—</p>
+        </div>
+      </section>
+
+      <article class="waterfall" id="waterfall" aria-label="Roof net cost after benefits">
+        <div class="waterfall-row" data-step="1">
+          <div class="wf-copy">
+            <p class="wf-kicker">01</p>
+            <h2>Total cost</h2>
+            <p class="wf-note" id="wf-total-note">Squares × price per square</p>
+          </div>
+          <p class="wf-amount" id="wf-total">—</p>
+        </div>
+
+        <div
+          class="waterfall-row is-credit has-detail"
+          data-step="2"
+          data-benefit="value"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+        >
+          <div class="wf-copy">
+            <p class="wf-kicker">02 · less</p>
+            <h2>Value add-back</h2>
+            <p class="wf-note" id="wf-value-note">Regional resale recoup on an asphalt roof</p>
+          </div>
+          <div class="wf-figure">
+            <p class="wf-amount" id="wf-value">—</p>
+            <p class="wf-sources">Sources</p>
+          </div>
+        </div>
+
+        <div
+          class="waterfall-row is-credit has-detail"
+          data-step="3"
+          data-benefit="energy"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+        >
+          <div class="wf-copy">
+            <p class="wf-kicker">03 · less</p>
+            <h2>Energy efficiency</h2>
+            <p class="wf-note" id="wf-energy-note">Old roof → new Dynasty system</p>
+          </div>
+          <div class="wf-figure">
+            <p class="wf-amount" id="wf-energy">—</p>
+            <p class="wf-sources">Sources</p>
+          </div>
+        </div>
+
+        <div
+          class="waterfall-row is-credit has-detail"
+          data-step="4"
+          data-benefit="insurance"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+        >
+          <div class="wf-copy">
+            <p class="wf-kicker">04 · less</p>
+            <h2>Insurance benefits</h2>
+            <p class="wf-note" id="wf-insurance-note">Typical new-roof credit</p>
+          </div>
+          <div class="wf-figure">
+            <p class="wf-amount" id="wf-insurance">—</p>
+            <p class="wf-sources">Sources</p>
+          </div>
+        </div>
+
+        <div class="waterfall-row is-net" data-step="5">
+          <div class="wf-copy">
+            <p class="wf-kicker">05</p>
+            <h2 id="wf-net-title">Net cost after benefits</h2>
+            <p class="wf-note" id="wf-net-note">What remains after value, energy, and insurance</p>
+          </div>
+          <p class="wf-amount" id="wf-net">—</p>
+        </div>
+      </article>
+
+      <div class="price-path" id="price-path" data-step="5">
+        <p class="util-path-label">Which price</p>
+        <div class="util-path-pills roof-price-pills" role="radiogroup" aria-label="Contract price">
+          <label>
+            <input type="radio" name="price-mode" value="year" checked />
+            <span>1 year price<small>as entered</small></span>
+          </label>
+          <label>
+            <input type="radio" name="price-mode" value="day-of" />
+            <span>Day of<small>10% off overhead</small></span>
+          </label>
+        </div>
+      </div>
+
+      <p class="net-per-square" id="net-per-square" data-step="5"></p>
+
+      <section class="story benefit-story" data-step="6">
+        <div class="story-card">
+          <p class="story-kicker">Home value</p>
+          <h3 id="value-headline">Buyers pay for a new roof.</h3>
+          <p id="value-body"></p>
+          <div class="cap-badge">
+            <p class="cap-num" id="value-badge">—</p>
+            <p class="cap-copy" id="value-badge-copy">of project cost typically recouped at resale</p>
+          </div>
+          <a
+            class="source-link"
+            href="https://www.jlconline.com/cost-vs-value/2025/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >Source: JLC Cost vs. Value 2025</a>
+        </div>
+
+        <div class="story-card">
+          <p class="story-kicker">Energy</p>
+          <h3>An old roof leaks more than water.</h3>
+          <p id="energy-body"></p>
+          <div class="cap-badge">
+            <p class="cap-num" id="energy-badge">—</p>
+            <p class="cap-copy" id="energy-badge-copy">typical annual efficiency benefit in this region</p>
+          </div>
+          <p class="cap-foot">IKO Dynasty architectural system vs. an aged roof</p>
+        </div>
+
+        <div class="story-card">
+          <p class="story-kicker">Insurance</p>
+          <h3 id="insurance-headline">Carriers price the roof they see.</h3>
+          <p id="insurance-body"></p>
+          <div class="cap-badge">
+            <p class="cap-num" id="insurance-badge">—</p>
+            <p class="cap-copy" id="insurance-badge-copy">typical annual premium relief after a re-roof</p>
+          </div>
+          <p class="cap-foot">Regional / national new-roof credit averages</p>
+        </div>
+
+        <article class="story-card dynasty-card">
+          <p class="story-kicker">The system</p>
+          <h3>IKO Dynasty. <em>Architectural Performance.</em></h3>
+          <p>
+            This close is a full Dynasty system — not a 3-tab swap. Laminated
+            architectural shingles with a 1¼-inch ArmourZone nailing band,
+            FastLock sun-activated sealant, Class 3 impact rating, and a limited
+            wind warranty up to 130 mph. Limited lifetime coverage with 15-year
+            Iron Clad protection, plus blue-green algae resistance. Three bundles
+            cover a true square.
+          </p>
+          <div class="cap-badge">
+            <p class="cap-num">Class 3</p>
+            <p class="cap-copy">impact rating · 130 mph wind warranty · 15-year Iron Clad</p>
+          </div>
+          <div class="dynasty-links">
+            <a
+              class="source-link"
+              href="https://www.iko.com/na/product/dynasty/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >IKO Dynasty product page</a>
+            <a
+              class="source-link"
+              href="https://mediaresourcecenter.iko.com/m/9cb658bc5b184278/original/IKO_TDS_DYST_EN.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Technical data sheet (PDF)</a>
+            <a
+              class="source-link"
+              href="https://www.iko.com/na/wp-content/uploads/2025/03/IKO_DYST_HO_BROCH_CA_EN.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Homeowner brochure (PDF)</a>
+            <a
+              class="source-link"
+              href="https://www.iko.com/na/product/dynasty-cool-plus/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >Cool Colors Plus</a>
+            <a
+              class="source-link"
+              href="https://www.iko.com/na/document-library/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >IKO document library</a>
+          </div>
+        </article>
+      </section>
+
+      <section class="horizon" data-step="7">
+        <div class="horizon-copy">
+          <p class="story-kicker">How long the give-backs run</p>
+          <h3>Energy and insurance, over the life of the roof</h3>
+          <p>
+            Value add-back is a one-time resale recoup. Energy and insurance
+            accumulate while you own the Dynasty system. Pick the window that
+            matches how this family talks about staying.
+          </p>
+        </div>
+        <div class="util-path" id="horizon-path">
+          <p class="util-path-label">Benefit window</p>
+          <div class="util-path-pills roof-horizon-pills" role="radiogroup" aria-label="Benefit years">
+            <label>
+              <input type="radio" name="horizon-years" value="10" />
+              <span>10 years<small>near-term</small></span>
+            </label>
+            <label>
+              <input type="radio" name="horizon-years" value="20" checked />
+              <span>20 years<small>typical</small></span>
+            </label>
+            <label>
+              <input type="radio" name="horizon-years" value="25" />
+              <span>25 years<small>Dynasty life</small></span>
+            </label>
+          </div>
+        </div>
+        <p class="disclaimer" id="disclaimer"></p>
+      </section>
+    </main>
+  </div>
+
+  <div class="walk-hint" id="walk-hint" hidden>Tap anywhere to reveal the next line</div>
+  <div class="cost-pop" id="benefit-pop" hidden>
+    <div class="cost-pop-card benefit-pop-card" role="dialog" aria-modal="true" aria-labelledby="benefit-pop-title">
+      <p class="story-kicker" id="benefit-pop-kicker">Sources</p>
+      <h2 id="benefit-pop-title">What’s in this number</h2>
+      <div class="cost-breakdown" id="benefit-pop-math"></div>
+      <p class="benefit-pop-body" id="benefit-pop-body"></p>
+      <div class="benefit-cites" id="benefit-pop-cites"></div>
+      <button type="button" class="text-btn" id="benefit-pop-close">Close</button>
+    </div>
+  </div>
+
+  <script src="roof.js?v=roof5"></script>
+</body>
+</html>
