@@ -535,6 +535,16 @@ select:focus {
   font-size: 0.85rem;
 }
 
+.site-footer a {
+  color: var(--accent-deep);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+}
+
 .rsa-preview {
   display: flex;
   align-items: center;

@@ -1,0 +1,272 @@
+.roof-tool .roof-job {
+  grid-column: 1 / -1;
+}
+
+.roof-optional-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.05rem 1.1rem;
+}
+
+.live-total {
+  margin-top: 1.15rem;
+  padding: 1.05rem 1.15rem 1.1rem;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1.25rem;
+}
+
+.live-kicker {
+  margin: 0;
+  width: 100%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.live-math {
+  margin: 0.15rem 0 0;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
+.live-amount {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(2rem, 4.5vw, 2.85rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--accent-deep);
+}
+
+.job-recap {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1.35fr;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin: 0 0 1.25rem;
+  padding: 1rem 0.85rem;
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.job-recap-item {
+  text-align: center;
+  padding: 0.35rem 0.5rem;
+}
+
+.job-recap-label {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.job-recap-value {
+  margin: 0.2rem 0 0;
+  font-family: var(--display);
+  font-size: clamp(1.45rem, 3.4vw, 2.15rem);
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.job-recap-item.is-total .job-recap-value {
+  color: var(--accent-deep);
+}
+
+.job-recap-times {
+  margin: 0;
+  align-self: center;
+  font-family: var(--display);
+  font-size: 1.6rem;
+  color: var(--ink-soft);
+  opacity: 0.7;
+}
+
+.waterfall {
+  background: rgba(255, 252, 246, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.waterfall-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.15rem 1.35rem 1.2rem;
+  border-top: 1px solid rgba(11, 31, 42, 0.08);
+  animation: rise 0.55s ease both;
+}
+
+.waterfall-row:first-child {
+  border-top: 0;
+}
+
+.waterfall-row:nth-child(1) { animation-delay: 0.04s; }
+.waterfall-row:nth-child(2) { animation-delay: 0.1s; }
+.waterfall-row:nth-child(3) { animation-delay: 0.16s; }
+.waterfall-row:nth-child(4) { animation-delay: 0.22s; }
+.waterfall-row:nth-child(5) { animation-delay: 0.28s; }
+
+.wf-kicker {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.wf-copy h2 {
+  margin: 0.12rem 0 0;
+  font-family: var(--display);
+  font-size: clamp(1.45rem, 3.2vw, 2.05rem);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.wf-note {
+  margin: 0.28rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.wf-amount {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(1.85rem, 4.2vw, 2.85rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.waterfall-row.is-credit {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.waterfall-row.is-credit .wf-amount {
+  color: var(--accent-deep);
+}
+
+.waterfall-row.is-net {
+  background: var(--ink);
+  color: #fff;
+}
+
+.waterfall-row.is-net .wf-kicker,
+.waterfall-row.is-net .wf-note {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.waterfall-row.is-net .wf-amount {
+  color: #fff;
+}
+
+.waterfall-row.is-net.is-gain {
+  background: var(--accent-deep);
+}
+
+.net-per-square {
+  margin: 0.85rem 0 0;
+  font-family: var(--display);
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  letter-spacing: -0.02em;
+  color: var(--accent-deep);
+}
+
+.benefit-story {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.roof-horizon-pills {
+  grid-template-columns: 1fr 1fr 1fr;
+  max-width: 36rem;
+}
+
+.roof-tool .site-footer a {
+  color: var(--accent-deep);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.roof-tool .site-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 860px) {
+  .roof-optional-grid,
+  .benefit-story {
+    grid-template-columns: 1fr;
+  }
+
+  .job-recap {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+
+  .job-recap-times {
+    display: none;
+  }
+
+  .roof-horizon-pills {
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .waterfall-row {
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+    padding: 0.95rem 0.95rem 1rem;
+  }
+
+  .wf-amount {
+    font-size: clamp(1.55rem, 8vw, 2.15rem);
+  }
+
+  .job-recap-value {
+    font-size: clamp(1.35rem, 7vw, 1.85rem);
+  }
+}
+
+body.is-walking .waterfall-row {
+  animation: none;
+}
+
+@media print {
+  .roof-tool .atmosphere,
+  .roof-tool .present-tools,
+  .roof-tool .walk-hint,
+  .roof-tool #screen-input {
+    display: none !important;
+  }
+
+  .roof-tool #screen-chart {
+    display: block !important;
+  }
+
+  .waterfall,
+  .job-recap,
+  .story-card,
+  .horizon {
+    box-shadow: none;
+    break-inside: avoid;
+  }
+}
