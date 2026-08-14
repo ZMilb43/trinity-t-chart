@@ -149,12 +149,16 @@
 
 .wf-copy h2 {
   margin: 0.12rem 0 0;
+  display: inline-block;
   font-family: var(--display);
   font-size: clamp(1.45rem, 3.2vw, 2.05rem);
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  font-weight: 400;
+  letter-spacing: -0.03em;
   line-height: 1.1;
-  -webkit-text-stroke: 0.5px currentColor;
+  transform-origin: left center;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    letter-spacing 0.2s ease;
 }
 
 .wf-note {
@@ -169,16 +173,14 @@
   display: inline-block;
   font-family: var(--display);
   font-size: clamp(1.85rem, 4.2vw, 2.85rem);
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  font-weight: 400;
+  letter-spacing: -0.03em;
   line-height: 1;
   white-space: nowrap;
   transform-origin: center right;
-  -webkit-text-stroke: 0.5px currentColor;
   transition:
     transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    letter-spacing 0.2s ease,
-    -webkit-text-stroke 0.2s ease;
+    letter-spacing 0.2s ease;
 }
 
 .wf-figure {
@@ -210,12 +212,13 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .waterfall-row:hover .wf-copy h2,
+  .waterfall-row:focus-within .wf-copy h2,
   .waterfall-row:hover .wf-amount,
   .waterfall-row:focus-within .wf-amount,
   .job-recap-item:hover .job-recap-value {
-    transform: scale(1.22);
-    letter-spacing: -0.045em;
-    -webkit-text-stroke: 0.7px currentColor;
+    transform: scale(1.18);
+    letter-spacing: -0.04em;
   }
 
   .waterfall-row.has-detail:hover,
@@ -274,6 +277,17 @@
   grid-template-columns: 1fr 1fr 1fr;
 }
 
+.dynasty-card {
+  grid-column: 1 / -1;
+}
+
+.dynasty-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.95rem;
+}
+
 .roof-horizon-pills {
   grid-template-columns: 1fr 1fr 1fr;
   max-width: 36rem;
@@ -329,12 +343,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wf-amount {
+  .wf-amount,
+  .wf-copy h2 {
     transition: none;
   }
 
   .waterfall-row:hover .wf-amount,
-  .waterfall-row:focus-within .wf-amount {
+  .waterfall-row:focus-within .wf-amount,
+  .waterfall-row:hover .wf-copy h2,
+  .waterfall-row:focus-within .wf-copy h2 {
     transform: none;
   }
 }
