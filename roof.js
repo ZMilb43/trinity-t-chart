@@ -595,7 +595,7 @@ function renderChart() {
     (m.dayOf ? " at the day-of price" : "") +
     `, that is ${money(m.valueAdd)} of value add-back.${valueShare}`;
   els.valueBadge.textContent = m.region.recoupLabel;
-  els.valueBadgeCopy.textContent = `of project cost typically recouped at resale in ${m.region.name}`;
+  els.valueBadgeCopy.textContent = `typically recouped at resale in ${m.region.name}`;
 
   els.energyBody.textContent =
     m.region.energyStory +
@@ -604,7 +604,7 @@ function renderChart() {
     `IKO Dynasty is a laminated architectural Performance shingle (ArmourZone nailing, FastLock sealant, ` +
     `limited lifetime / 15-year Iron Clad). The jump is from an old, thin, leaking roof to a full new system.`;
   els.energyBadge.textContent = money(m.energyAnnual);
-  els.energyBadgeCopy.textContent = `typical annual efficiency benefit on this roof, ${m.region.name}`;
+  els.energyBadgeCopy.textContent = `annual efficiency benefit in ${m.region.name}`;
 
   els.insuranceHeadline.innerHTML = m.roofAge
     ? `A ${Math.round(m.roofAge)}-year roof is a <em>rated</em> roof.`
@@ -618,7 +618,7 @@ function renderChart() {
     ` — ${money(m.insuranceAnnual)} a year, ${money(m.insuranceTotal)} over ${m.years} years. ` +
     `Credits are carrier-specific; 5–25% is the national conversation, with hail and wind states at the top.`;
   els.insuranceBadge.textContent = money(m.insuranceAnnual);
-  els.insuranceBadgeCopy.textContent = `typical annual premium relief after re-roofing, ${m.region.name}`;
+  els.insuranceBadgeCopy.textContent = `typical annual premium relief in ${m.region.name}`;
 
   els.disclaimer.textContent =
     `Value add-back applies the ${m.region.name} asphalt-roof recoup rate from the 2025 Journal of Light Construction ` +

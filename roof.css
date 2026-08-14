@@ -286,6 +286,39 @@
   flex-wrap: wrap;
   gap: 0.45rem;
   margin-top: 0.95rem;
+  justify-content: center;
+}
+
+.roof-tool .benefit-story .cap-badge {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: 0.4rem;
+  min-height: 0;
+  padding: 1.15rem 1.15rem 1.2rem;
+}
+
+.roof-tool .benefit-story .cap-num {
+  font-size: clamp(2.2rem, 4vw, 2.9rem);
+  line-height: 1;
+}
+
+.roof-tool .benefit-story .cap-copy {
+  max-width: 16.5rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.roof-tool .benefit-story .cap-foot {
+  align-self: center;
+  text-align: center;
+}
+
+.roof-tool .benefit-story .source-link {
+  align-self: center;
 }
 
 .roof-horizon-pills {
