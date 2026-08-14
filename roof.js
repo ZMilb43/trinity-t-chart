@@ -474,7 +474,7 @@ function benefitCopy(kind, m) {
         `<p class="bd-total"><span>Energy efficiency</span><strong>${money(m.energyTotal)}</strong></p>`,
       body:
         m.region.energyStory +
-        ` This close uses ${money(m.region.energyPerSquare)} per square per year — in the range DOE and LBNL publish ` +
+        ` This comparison uses ${money(m.region.energyPerSquare)} per square per year — in the range DOE and LBNL publish ` +
         `for moving off a dark, worn asphalt roof onto a new architectural system with a sealed, ventilated attic. ` +
         `IKO Dynasty is a laminated Performance shingle (ArmourZone, FastLock, Class 3 impact). Cool Colors Plus adds ` +
         `infrared-reflective granules (SRI 20+) where that color is selected. Not a utility-bill guarantee.`,
@@ -508,7 +508,7 @@ function benefitCopy(kind, m) {
       ageLine +
       ` Triple-I notes that stronger roofing and wind-mitigation work can cut premiums, and its 2024 roof toolkit ` +
       `puts impact-resistant credits commonly in the 5–35% range depending on state and carrier. ` +
-      `This close uses ${pctLabel(m.region.insuranceDiscount)} of ${money(m.premium)} — ${money(m.insuranceAnnual)} a year. ` +
+      `This comparison uses ${pctLabel(m.region.insuranceDiscount)} of ${money(m.premium)} — ${money(m.insuranceAnnual)} a year. ` +
       `Some carriers also restore replacement-cost coverage only after a re-roof. Confirm with this home’s insurer.`,
     cites: [
       citeLink(
@@ -634,7 +634,7 @@ function renderChart() {
   els.insuranceBody.textContent =
     m.region.insuranceStory +
     ageBit +
-    ` This close uses a ${pctLabel(m.region.insuranceDiscount)} credit on ` +
+    ` This comparison uses a ${pctLabel(m.region.insuranceDiscount)} credit on ` +
     `${money(m.premium)} a year` +
     (m.usedEnteredPremium ? " (this home’s premium)" : ` (the ${m.region.name} average in the model)`) +
     ` — ${money(m.insuranceAnnual)} a year, ${money(m.insuranceTotal)} over ${m.years} years. ` +
@@ -655,7 +655,7 @@ function renderChart() {
     `Value, energy, and insurance accrue on different timelines. ` +
     `The 12-month price is squares × the per-square figure entered on page 1. ` +
     `Day-of is 10% off that contract for reduced overhead; energy and insurance do not change with the toggle. ` +
-    `Illustrative kitchen-table math — not a savings, appraisal, or insurance guarantee.`;
+    `Illustrative estimate — not a savings, appraisal, or insurance guarantee.`;
 
   if (openBenefit) openBenefitPop(openBenefit);
 }
@@ -692,8 +692,8 @@ async function shareClose() {
   const url = buildShareLink("roof.html", packShare());
   const result = await shareOrCopy(
     url,
-    "Your Trinity roof close",
-    "Here’s the roof close from Trinity Total Home."
+    "Your Trinity roof comparison",
+    "Here’s the roof comparison from Trinity Total Home."
   );
   flashShareButton(els.shareBtn, result);
 }

@@ -133,6 +133,7 @@ let presentBattery = false;
 let costDetail = null;
 let costPopKind = null;
 let sharedMode = false;
+let shareStills = { st: "", sa: "", rs: "", loaded: false };
 const stepNodes = () =>
   [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
@@ -380,7 +381,7 @@ function fileToResizedDataUrl(file) {
 function renderFlyover() {
   const address = els.address.value.trim();
   const keys = loadKeys();
-  const hasHome = Boolean(address || rsaDataUrl);
+  const hasHome = Boolean(address || rsaDataUrl || shareStills.st || shareStills.sa);
   if (!hasHome) flyoverOpen = false;
 
   els.visualizeWrap.hidden = !hasHome || flyoverOpen;
@@ -393,33 +394,38 @@ function renderFlyover() {
   }
   if (!flyoverOpen) return;
 
-  els.flyoverAddress.textContent = address || "RSA design for this proposal";
+  els.flyoverAddress.textContent = address || "RSA design for this home";
 
-  if (keys.googleKey && address) {
-    showStill(
-      els.streetImg,
-      els.streetPlaceholder,
-      mapsUrl("street", address, keys.googleKey),
-      "No street photo for this address."
-    );
-    showStill(
-      els.satelliteImg,
-      els.satellitePlaceholder,
-      mapsUrl("satellite", address, keys.googleKey),
-      "Satellite needs a working Google Maps key."
-    );
+  const streetSrc = shareStills.st || (keys.googleKey && address ? mapsUrl("street", address, keys.googleKey) : "");
+  const satSrc = shareStills.sa || (keys.googleKey && address ? mapsUrl("satellite", address, keys.googleKey) : "");
+
+  if (streetSrc) {
+    showStill(els.streetImg, els.streetPlaceholder, streetSrc, "No street photo for this address.");
   } else {
     showStill(
       els.streetImg,
       els.streetPlaceholder,
       "",
-      address ? "Add a Google Maps key in API setup to load Street View." : "Street View"
+      address
+        ? shareStills.loaded
+          ? "No street photo for this address."
+          : "Add a Google Maps key in API setup to load Street View."
+        : "Street View"
     );
+  }
+
+  if (satSrc) {
+    showStill(els.satelliteImg, els.satellitePlaceholder, satSrc, "Satellite photo unavailable.");
+  } else {
     showStill(
       els.satelliteImg,
       els.satellitePlaceholder,
       "",
-      address ? "Add a Google Maps key in API setup to load satellite." : "Satellite"
+      address
+        ? shareStills.loaded
+          ? "Satellite photo unavailable."
+          : "Add a Google Maps key in API setup to load satellite."
+        : "Satellite"
     );
   }
 
@@ -862,28 +868,78 @@ function applyShare(data) {
   els.roofingMonthly.value = data.rm || "";
   els.batteryInclude.checked = Boolean(data.bi);
   els.batteryMonthly.value = data.bm || "";
+  if (data.rs) {
+    setRsaPreview(data.rs);
+    shareStills.rs = data.rs;
+  }
+  if (data.st) shareStills.st = data.st;
+  if (data.sa) shareStills.sa = data.sa;
+  shareStills.loaded = Boolean(data.st || data.sa || data.rs);
+  if (shareStills.loaded) flyoverOpen = true;
   syncAddonFields();
   const parsed = readInputs();
   return Boolean(parsed.utilityRate && parsed.solarRate && parsed.utilityKwh && parsed.solarKwh);
 }
 
+async function captureShareStills() {
+  const address = els.address.value.trim();
+  const worker = shareWorkerUrl(loadKeys().workerUrl);
+  const [rs, st, sa] = await Promise.all([
+    rsaDataUrl ? compressDataUrl(rsaDataUrl) : Promise.resolve(""),
+    fetchShareStill(worker, "street", address),
+    fetchShareStill(worker, "satellite", address),
+  ]);
+  return { rs, st, sa };
+}
+
 async function shareClose() {
   const data = readInputs();
   if (!data.utilityRate || !data.solarRate || !data.utilityKwh || !data.solarKwh) return;
-  const url = buildShareLink("index.html", packShare());
-  const result = await shareOrCopy(
-    url,
-    "Your Trinity solar close",
-    "Here’s the T-chart from Trinity Total Home."
-  );
-  flashShareButton(els.shareBtn, result);
+  const btn = els.shareBtn;
+  const prior = btn ? btn.textContent : "Share";
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Preparing photos…";
+  }
+  try {
+    const stills = await captureShareStills();
+    const payload = { ...packShare(), ...stills };
+    const worker = shareWorkerUrl(loadKeys().workerUrl);
+    const id = await uploadSharePayload(worker, payload);
+    let shareBody = id ? `w_${id}` : null;
+    if (!shareBody) {
+      payload.st = payload.st ? await compressDataUrl(payload.st, 400, 0.4) : "";
+      payload.sa = payload.sa ? await compressDataUrl(payload.sa, 400, 0.4) : "";
+      payload.rs = payload.rs ? await compressDataUrl(payload.rs, 400, 0.4) : "";
+      shareBody = slimSharePayload(payload);
+    }
+    const url = buildShareLink("index.html", shareBody);
+    const result = await shareOrCopy(
+      url,
+      "Your Trinity solar comparison",
+      "Here’s the solar comparison from Trinity Total Home."
+    );
+    if (btn) btn.textContent = prior;
+    flashShareButton(btn, result);
+  } catch (error) {
+    window.alert(error.message || "Could not share this view.");
+    if (btn) btn.textContent = prior;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
-function bootShare() {
+async function bootShare() {
   const raw = readShareHash();
   if (!raw) return false;
   try {
-    if (!applyShare(decodeSharePayload(raw))) return false;
+    let data;
+    if (raw.startsWith("w_")) {
+      data = await downloadSharePayload(shareWorkerUrl(""), raw.slice(2));
+    } else {
+      data = decodeSharePayload(raw);
+    }
+    if (!applyShare(data)) return false;
     sharedMode = true;
     document.body.classList.add("is-shared");
     if (els.sharedBanner) els.sharedBanner.hidden = false;
@@ -906,7 +962,7 @@ function showScreen(name) {
   document.body.classList.toggle("presenting", presenting);
   window.scrollTo(0, 0);
   if (presenting) {
-    flyoverOpen = false;
+    if (!sharedMode) flyoverOpen = false;
     presentRoofing = false;
     presentBattery = false;
     renderChart();
@@ -1154,7 +1210,13 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-if (!bootShare()) {
+bootShare().then((ok) => {
+  if (ok) {
+    syncAddonFields();
+    rateHint(els.utilityRate, els.utilityRateHint);
+    rateHint(els.solarRate, els.solarRateHint);
+    return;
+  }
   loadInputs();
   fillKeyFields();
   loadRsa();
@@ -1162,8 +1224,4 @@ if (!bootShare()) {
   rateHint(els.utilityRate, els.utilityRateHint);
   rateHint(els.solarRate, els.solarRateHint);
   drawSparkline();
-} else {
-  syncAddonFields();
-  rateHint(els.utilityRate, els.utilityRateHint);
-  rateHint(els.solarRate, els.solarRateHint);
-}
+});

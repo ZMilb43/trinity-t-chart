@@ -1,6 +1,7 @@
 /**
  * Trinity T-chart — Grok Imagine flyover proxy
- * Version 5 — RSA layout is the authority for panel placement.
+ * Version 6 — RSA layout is the authority for panel placement.
+ * Also snapshots Street View / satellite / RSA for shared page-2 links.
  *
  * After editing this file, paste it into the Cloudflare Worker editor
  * and click Save and Deploy. GitHub Pages does not update the Worker.
@@ -10,7 +11,9 @@
  *   GOOGLE_MAPS_KEY  (second Google key, no HTTP-referrer lock)
  */
 
-const VERSION = 5;
+const VERSION = 6;
+
+const SHARE_TTL_SECONDS = 60 * 60 * 24 * 90;
 
 const ALLOWED_ORIGINS = [
   "https://zmilb43.github.io",
@@ -271,30 +274,96 @@ async function handleStatus(request, env) {
   return json(request, { status, url, requestId });
 }
 
+function bytesToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+
+function newShareId() {
+  const bytes = crypto.getRandomValues(new Uint8Array(9));
+  return [...bytes].map((b) => b.toString(36).padStart(2, "0")).join("").slice(0, 12);
+}
+
+async function handleStill(request, env) {
+  const url = new URL(request.url);
+  const kind = url.searchParams.get("kind") === "satellite" ? "satellite" : "street";
+  const address = (url.searchParams.get("address") || "").trim();
+  const googleKey = env.GOOGLE_MAPS_KEY || "";
+  if (!googleKey) {
+    return json(request, { error: "GOOGLE_MAPS_KEY is not set on the Worker.", step: "config" }, 500);
+  }
+  if (!address) return json(request, { error: "Missing address.", step: "still" }, 400);
+  try {
+    const image = await fetchImageBytes(mapsUrl(kind, address, googleKey));
+    return json(request, {
+      dataUrl: `data:${image.mime};base64,${bytesToBase64(image.bytes)}`,
+    });
+  } catch (error) {
+    return json(request, { error: error.message || "Could not fetch that photo.", step: "still" }, 502);
+  }
+}
+
+async function handleSharePut(request, env) {
+  if (!env.SHARE) {
+    return json(
+      request,
+      { error: "Share storage is not bound. Run wrangler kv namespace create SHARE.", step: "share" },
+      501
+    );
+  }
+  const body = await request.json();
+  const payload = body.payload || body;
+  if (!payload || typeof payload !== "object") {
+    return json(request, { error: "Missing share payload.", step: "share" }, 400);
+  }
+  const id = newShareId();
+  await env.SHARE.put(id, JSON.stringify(payload), { expirationTtl: SHARE_TTL_SECONDS });
+  return json(request, { id });
+}
+
+async function handleShareGet(request, env) {
+  if (!env.SHARE) {
+    return json(request, { error: "Share storage is not bound.", step: "share" }, 501);
+  }
+  const id = new URL(request.url).searchParams.get("id") || "";
+  if (!id) return json(request, { error: "Missing id.", step: "share" }, 400);
+  const raw = await env.SHARE.get(id);
+  if (!raw) return json(request, { error: "That shared view expired or was not found.", step: "share" }, 404);
+  return json(request, { payload: JSON.parse(raw) });
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(request) });
     }
 
-    if (request.method === "GET") {
-      return json(request, { ok: true, service: "trinity-flyover" });
-    }
-
-    if (request.method !== "POST") {
-      return json(request, { error: "POST only." }, 405);
-    }
-
     const path = new URL(request.url).pathname.replace(/\/$/, "") || "/";
 
     try {
+      if (request.method === "GET") {
+        if (path.endsWith("/still")) return await handleStill(request, env);
+        if (path.endsWith("/share")) return await handleShareGet(request, env);
+        return json(request, { ok: true, service: "trinity-flyover", v: VERSION });
+      }
+
+      if (request.method !== "POST") {
+        return json(request, { error: "GET or POST only." }, 405);
+      }
+
+      if (path.endsWith("/share")) return await handleSharePut(request, env);
       if (path.endsWith("/generate") || path === "/" || path === "/flyover") {
         return await handleGenerate(request, env);
       }
       if (path.endsWith("/status")) {
         return await handleStatus(request, env);
       }
-      return json(request, { error: "Not found. Use /generate or /status." }, 404);
+      return json(request, { error: "Not found. Use /generate, /status, /still, or /share." }, 404);
     } catch (error) {
       return json(request, { error: error.message || "Worker error.", step: "worker" }, 500);
     }
