@@ -502,11 +502,13 @@ function benefitCopy(kind, m) {
 
 function closeBenefitPop() {
   openBenefit = null;
+  if (!els.benefitPop) return;
   els.benefitPop.hidden = true;
+  els.benefitPop.classList.remove("is-open");
 }
 
 function openBenefitPop(kind) {
-  if (!lastModel || !["value", "energy", "insurance"].includes(kind)) return;
+  if (!lastModel || !els.benefitPop || !["value", "energy", "insurance"].includes(kind)) return;
   openBenefit = kind;
   const copy = benefitCopy(kind, lastModel);
   els.benefitPopKicker.textContent = copy.kicker;
@@ -515,6 +517,7 @@ function openBenefitPop(kind) {
   els.benefitPopBody.textContent = copy.body;
   els.benefitPopCites.innerHTML = copy.cites;
   els.benefitPop.hidden = false;
+  els.benefitPop.classList.add("is-open");
 }
 
 function renderChart() {
@@ -689,26 +692,31 @@ document.querySelectorAll('input[name="horizon-years"]').forEach((input) => {
   });
 });
 
+document.getElementById("waterfall").addEventListener("click", (event) => {
+  const row = event.target.closest("[data-benefit]");
+  if (!row || els.chart.hidden) return;
+  event.preventDefault();
+  event.stopPropagation();
+  openBenefitPop(row.getAttribute("data-benefit"));
+});
+
 document.querySelectorAll("[data-benefit]").forEach((row) => {
-  const open = () => openBenefitPop(row.getAttribute("data-benefit"));
-  row.addEventListener("click", (event) => {
-    event.stopPropagation();
-    open();
-  });
   row.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       event.stopPropagation();
-      open();
+      openBenefitPop(row.getAttribute("data-benefit"));
     }
   });
 });
 
-els.benefitPop.addEventListener("click", (event) => {
-  if (event.target === els.benefitPop || event.target.closest("#benefit-pop-close")) {
-    closeBenefitPop();
-  }
-});
+if (els.benefitPop) {
+  els.benefitPop.addEventListener("click", (event) => {
+    if (event.target === els.benefitPop || event.target.closest("#benefit-pop-close")) {
+      closeBenefitPop();
+    }
+  });
+}
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;

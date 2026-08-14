@@ -167,17 +167,51 @@
   transform-origin: center right;
   transition:
     transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    font-weight 0.2s ease,
     letter-spacing 0.2s ease,
     -webkit-text-stroke 0.2s ease;
 }
 
-.waterfall-row:hover .wf-amount,
-.waterfall-row:focus-within .wf-amount {
-  transform: scale(1.22);
+.wf-figure {
+  display: grid;
+  justify-items: end;
+  gap: 0.2rem;
+}
+
+.wf-sources {
+  margin: 0;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 10%, #fff);
+  color: var(--accent-deep);
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: -0.045em;
-  -webkit-text-stroke: 0.55px currentColor;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.job-recap-value {
+  display: inline-block;
+  transform-origin: center center;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    letter-spacing 0.2s ease,
+    -webkit-text-stroke 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .waterfall-row:hover .wf-amount,
+  .waterfall-row:focus-within .wf-amount,
+  .job-recap-item:hover .job-recap-value {
+    transform: scale(1.22);
+    letter-spacing: -0.045em;
+    -webkit-text-stroke: 0.7px currentColor;
+  }
+
+  .waterfall-row.has-detail:hover,
+  .waterfall-row.has-detail:focus-within {
+    background: color-mix(in srgb, var(--accent) 14%, #fff);
+  }
 }
 
 .waterfall-row.is-credit {
@@ -190,6 +224,7 @@
 
 .waterfall-row.has-detail {
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .waterfall-row.has-detail .wf-note {
@@ -242,6 +277,10 @@
 
 .roof-tool .site-footer a:hover {
   text-decoration: underline;
+}
+
+.cost-pop.is-open {
+  display: grid !important;
 }
 
 .benefit-pop-card {
@@ -307,12 +346,8 @@
     transform-origin: left center;
   }
 
-  .waterfall-row:hover .wf-amount,
-  .waterfall-row:focus-within .wf-amount {
-    transform: none;
-    font-weight: 400;
-    letter-spacing: -0.03em;
-    -webkit-text-stroke: 0;
+  .wf-figure {
+    justify-items: start;
   }
 
   .job-recap-value {
