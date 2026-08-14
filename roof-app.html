@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=roof8" />
-  <link rel="stylesheet" href="roof.css?v=roof8" />
+  <link rel="stylesheet" href="styles.css?v=roof9" />
+  <link rel="stylesheet" href="roof.css?v=roof9" />
 </head>
 <body class="roof-tool">
   <div class="atmosphere" aria-hidden="true"></div>
@@ -136,18 +136,6 @@
               <span class="hint" id="premium-hint">Leave blank to use the regional average.</span>
             </label>
           </div>
-          <label class="field house-photo-field">
-            <span class="field-label">House photo <span class="optional">optional</span></span>
-            <input id="house-photo" type="file" accept="image/*" />
-            <span class="hint">
-              Adding a photo opens IKO ROOFViewer under Dynasty on page 2.
-              You’ll upload this same picture inside their tool.
-            </span>
-            <div class="rsa-preview" id="house-photo-preview" hidden>
-              <img id="house-photo-preview-img" alt="This house" />
-              <button type="button" class="text-btn" id="house-photo-clear">Remove</button>
-            </div>
-          </label>
         </section>
 
         <div class="intake-actions">
@@ -387,21 +375,14 @@
         </article>
       </section>
 
-      <section class="story-card roof-viewer" id="roof-viewer" data-step="7" hidden>
+      <section class="story-card roof-viewer" id="roof-viewer" data-step="7">
         <p class="story-kicker">See it on the house</p>
         <h3>IKO <em>ROOFViewer</em></h3>
         <p>
-          IKO’s visualizer — the same one on their site. Upload the photo from
-          page 1 (or pick a stock house) and try Dynasty colors on this roof.
-          Rendering stays inside IKO’s tool.
+          IKO’s visualizer — the same one on their site. Upload a photo of this
+          house (or pick a stock home) and try Dynasty colors on the actual roof.
+          Photo upload and rendering stay inside IKO’s tool.
         </p>
-        <div class="roof-viewer-house" id="roof-viewer-house" hidden>
-          <img id="roof-house-thumb" alt="This house" />
-          <p>
-            Use this same photo in ROOFViewer. IKO’s tool can’t take it from
-            this close automatically.
-          </p>
-        </div>
         <div class="roof-viewer-actions">
           <button type="button" class="btn-primary" id="load-roofviewer">
             Reload ROOFViewer
@@ -472,6 +453,6 @@
     </div>
   </div>
 
-  <script src="roof.js?v=roof8"></script>
+  <script src="roof.js?v=roof9"></script>
 </body>
 </html>
