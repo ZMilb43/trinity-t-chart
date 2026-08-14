@@ -13,6 +13,7 @@
  */
 
 const STORAGE_KEY = "trinity-roof-v1";
+const DAY_OF_DISCOUNT = 0.1;
 
 const REGIONS = {
   "new-england": {
@@ -272,6 +273,21 @@ function setHorizon(years) {
   if (radio) radio.checked = true;
 }
 
+function selectedPriceMode() {
+  const checked = document.querySelector('input[name="price-mode"]:checked');
+  return checked && checked.value === "day-of" ? "day-of" : "year";
+}
+
+function setPriceMode(mode) {
+  const radio = document.querySelector(`input[name="price-mode"][value="${mode === "day-of" ? "day-of" : "year"}"]`);
+  if (radio) radio.checked = true;
+}
+
+function moneyRate(n) {
+  const rounded = Math.round(n * 100) / 100;
+  return money(rounded, Number.isInteger(rounded) ? 0 : 2);
+}
+
 function readInputs() {
   return {
     name: els.name.value.trim(),
@@ -282,13 +298,16 @@ function readInputs() {
     homeValue: parseMoney(els.homeValue.value),
     insurancePremium: parseMoney(els.insurancePremium.value),
     horizonYears: selectedHorizon(),
+    priceMode: selectedPriceMode(),
   };
 }
 
 function compute(data) {
   const region = regionOf(data.region);
   const squares = data.squares;
-  const pps = data.pricePerSquare;
+  const listPps = data.pricePerSquare;
+  const dayOf = data.priceMode === "day-of";
+  const pps = dayOf ? listPps * (1 - DAY_OF_DISCOUNT) : listPps;
   const total = Math.round(squares * pps);
   const valueAdd = Math.round(total * region.recoup);
   const premium = data.insurancePremium > 0 ? data.insurancePremium : region.premium;
@@ -302,7 +321,9 @@ function compute(data) {
   return {
     region,
     squares,
+    listPps,
     pps,
+    dayOf,
     total,
     valueAdd,
     premium,
@@ -408,7 +429,7 @@ function benefitCopy(kind, m) {
       kicker: "Value add-back",
       title: `${m.region.recoupLabel} recoup in ${m.region.name}`,
       math:
-        mathRow("This Dynasty roof", `${squaresLabel(m.squares)} × ${money(m.pps)}`, money(m.total)) +
+        mathRow("This Dynasty roof", `${squaresLabel(m.squares)} × ${moneyRate(m.pps)}`, money(m.total)) +
         mathRow(
           `${m.region.name} recoup rate`,
           `JLC 2025 asphalt roof · ${m.region.states}`,
@@ -535,11 +556,13 @@ function renderChart() {
   els.preparedFor.textContent = m.name ? `Prepared for ${m.name}` : "";
 
   els.recapSquares.textContent = squaresLabel(m.squares);
-  els.recapPps.textContent = money(m.pps);
+  els.recapPps.textContent = moneyRate(m.pps);
   els.recapTotal.textContent = money(m.total);
 
   els.wfTotal.textContent = money(m.total);
-  els.wfTotalNote.textContent = `${squaresLabel(m.squares)} × ${money(m.pps)} · IKO Dynasty architectural system`;
+  els.wfTotalNote.textContent = m.dayOf
+    ? `${squaresLabel(m.squares)} × ${moneyRate(m.pps)} · 10% day-of (overhead)`
+    : `${squaresLabel(m.squares)} × ${moneyRate(m.pps)} · 12-month price`;
 
   els.wfValue.textContent = `−${money(m.valueAdd)}`;
   els.wfValueNote.textContent = `${m.region.recoupLabel} recoup in ${m.region.name} · tap for sources`;
@@ -559,16 +582,18 @@ function renderChart() {
     : "What remains after value, energy, and insurance";
 
   const perSq = m.squares ? m.net / m.squares : 0;
+  const priceTag = m.dayOf ? "day-of" : "12-month";
   els.netPerSquare.textContent = netIsGain
-    ? `${money(Math.abs(m.net))} to the good — ${money(Math.abs(perSq))} per square, after benefits.`
-    : `${money(m.net)} net — ${money(perSq)} per square, after benefits.`;
+    ? `${money(Math.abs(m.net))} to the good — ${money(Math.abs(perSq))} per square, ${priceTag}.`
+    : `${money(m.net)} net — ${money(perSq)} per square, ${priceTag}.`;
 
   els.valueHeadline.innerHTML = `${m.region.name} buyers recoup <em>${m.region.recoupLabel}</em>.`;
   els.valueBody.textContent =
     `JLC’s 2025 Cost vs. Value report puts a typical asphalt roof replacement in ${m.region.name} ` +
     `at ${money(m.region.jobCostAvg)}, adding about ${money(m.region.resaleAvg)} at resale — ` +
-    `${m.region.recoupLabel} of cost. Applied to this ${money(m.total)} Dynasty roof, that is ` +
-    `${money(m.valueAdd)} of value add-back.${valueShare}`;
+    `${m.region.recoupLabel} of cost. Applied to this ${money(m.total)} Dynasty roof` +
+    (m.dayOf ? " at the day-of price" : "") +
+    `, that is ${money(m.valueAdd)} of value add-back.${valueShare}`;
   els.valueBadge.textContent = m.region.recoupLabel;
   els.valueBadgeCopy.textContent = `of project cost typically recouped at resale in ${m.region.name}`;
 
@@ -605,7 +630,10 @@ function renderChart() {
     `${pctLabel(m.region.insuranceDiscount)} of ${money(m.premium)} / year × ${m.years} years` +
     (m.usedEnteredPremium ? " using the premium entered for this home." : ` using a ${m.region.name} average premium.`) +
     ` Actual carrier credits range roughly 5–25% and some policies require a new roof to bind or to keep replacement-cost coverage. ` +
-    `Value, energy, and insurance accrue on different timelines. Illustrative kitchen-table math — not a savings, appraisal, or insurance guarantee.`;
+    `Value, energy, and insurance accrue on different timelines. ` +
+    `The 12-month price is squares × the per-square figure entered on page 1. ` +
+    `Day-of is 10% off that contract for reduced overhead; energy and insurance do not change with the toggle. ` +
+    `Illustrative kitchen-table math — not a savings, appraisal, or insurance guarantee.`;
 
   if (openBenefit) openBenefitPop(openBenefit);
 }
@@ -620,8 +648,10 @@ function showScreen(name) {
   els.chart.classList.toggle("is-active", presenting);
   document.body.classList.toggle("presenting", presenting);
   window.scrollTo(0, 0);
-  if (presenting) renderChart();
-  else {
+  if (presenting) {
+    setPriceMode("year");
+    renderChart();
+  } else {
     setWalking(false);
     closeBenefitPop();
   }
@@ -692,6 +722,12 @@ document.querySelectorAll('input[name="horizon-years"]').forEach((input) => {
   });
 });
 
+document.querySelectorAll('input[name="price-mode"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    if (!els.chart.hidden) renderChart();
+  });
+});
+
 document.getElementById("waterfall").addEventListener("click", (event) => {
   const row = event.target.closest("[data-benefit]");
   if (!row || els.chart.hidden) return;
@@ -720,7 +756,7 @@ if (els.benefitPop) {
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .util-path, .has-detail, .cost-pop")) return;
+  if (event.target.closest(".present-tools, a, .util-path, .price-path, .has-detail, .cost-pop")) return;
   revealNext();
 });
 

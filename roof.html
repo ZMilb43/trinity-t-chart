@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=roof3" />
-  <link rel="stylesheet" href="roof.css?v=roof3" />
+  <link rel="stylesheet" href="styles.css?v=roof4" />
+  <link rel="stylesheet" href="roof.css?v=roof4" />
 </head>
 <body class="roof-tool">
   <div class="atmosphere" aria-hidden="true"></div>
@@ -103,6 +103,7 @@
             <p class="live-kicker">Contract price</p>
             <p class="live-math" id="live-math">Enter squares and price per square</p>
             <p class="live-amount" id="live-total">—</p>
+            <p class="live-hint">12-month price. Day-of 10% is a toggle after net cost.</p>
           </div>
         </section>
 
@@ -263,6 +264,20 @@
         </div>
       </article>
 
+      <div class="price-path" id="price-path" data-step="5">
+        <p class="util-path-label">Which price</p>
+        <div class="util-path-pills roof-price-pills" role="radiogroup" aria-label="Contract price">
+          <label>
+            <input type="radio" name="price-mode" value="year" checked />
+            <span>1 year price<small>as entered</small></span>
+          </label>
+          <label>
+            <input type="radio" name="price-mode" value="day-of" />
+            <span>Day of<small>10% off overhead</small></span>
+          </label>
+        </div>
+      </div>
+
       <p class="net-per-square" id="net-per-square" data-step="5"></p>
 
       <section class="story benefit-story" data-step="6">
@@ -349,6 +364,6 @@
     </div>
   </div>
 
-  <script src="roof.js?v=roof3"></script>
+  <script src="roof.js?v=roof4"></script>
 </body>
 </html>
