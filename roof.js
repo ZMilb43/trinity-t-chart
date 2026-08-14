@@ -215,10 +215,19 @@ const els = {
   insuranceBadge: document.getElementById("insurance-badge"),
   insuranceBadgeCopy: document.getElementById("insurance-badge-copy"),
   disclaimer: document.getElementById("disclaimer"),
+  benefitPop: document.getElementById("benefit-pop"),
+  benefitPopKicker: document.getElementById("benefit-pop-kicker"),
+  benefitPopTitle: document.getElementById("benefit-pop-title"),
+  benefitPopMath: document.getElementById("benefit-pop-math"),
+  benefitPopBody: document.getElementById("benefit-pop-body"),
+  benefitPopCites: document.getElementById("benefit-pop-cites"),
+  benefitPopClose: document.getElementById("benefit-pop-close"),
 };
 
 let walking = false;
 let walkIndex = 0;
+let lastModel = null;
+let openBenefit = null;
 const stepNodes = () =>
   [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
@@ -371,10 +380,148 @@ function squaresLabel(n) {
   return `${rounded} sq`;
 }
 
+function jlcUrl(regionId) {
+  if (regionId === "national") return "https://www.jlconline.com/cost-vs-value/2025/";
+  return `https://www.jlconline.com/cost-vs-value/2025/${regionId}/`;
+}
+
+function citeLink(href, label) {
+  return `<a class="source-link" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+}
+
+function mathRow(name, math, amount) {
+  return `<p>
+    <span>
+      <span class="bd-name">${name}</span>
+      <span class="bd-math">${math}</span>
+    </span>
+    <strong>${amount}</strong>
+  </p>`;
+}
+
+function benefitCopy(kind, m) {
+  if (kind === "value") {
+    const homeLine = m.homeValue
+      ? ` On this ${money(m.homeValue)} home, ${money(m.valueAdd)} is ${((m.valueAdd / m.homeValue) * 100).toFixed(1)}% of today’s value.`
+      : "";
+    return {
+      kicker: "Value add-back",
+      title: `${m.region.recoupLabel} recoup in ${m.region.name}`,
+      math:
+        mathRow("This Dynasty roof", `${squaresLabel(m.squares)} × ${money(m.pps)}`, money(m.total)) +
+        mathRow(
+          `${m.region.name} recoup rate`,
+          `JLC 2025 asphalt roof · ${m.region.states}`,
+          m.region.recoupLabel
+        ) +
+        `<p class="bd-total"><span>Value add-back</span><strong>${money(m.valueAdd)}</strong></p>`,
+      body:
+        `JLC’s 2025 Cost vs. Value report estimates what buyers typically pay back at resale. ` +
+        `In ${m.region.name}, a midrange asphalt roof job averages ${money(m.region.jobCostAvg)} and adds about ` +
+        `${money(m.region.resaleAvg)} — ${m.region.recoupLabel} of cost. Applied to this contract, that is ` +
+        `${money(m.valueAdd)}. It is a resale estimate, not a check at install.${homeLine}`,
+      cites: [
+        citeLink(jlcUrl(els.region.value), `JLC Cost vs. Value 2025 — ${m.region.name}`),
+        citeLink("https://www.jlconline.com/cost-vs-value/2025/", "JLC Cost vs. Value 2025 — national (67.5% / 68%)"),
+        citeLink(
+          "https://www.morrisonshomeimprovement.com/copy-of-new-england-2024-cost-vs-value",
+          "New England 2025 table (asphalt roof 62.6%)"
+        ),
+      ].join(""),
+    };
+  }
+
+  if (kind === "energy") {
+    return {
+      kicker: "Energy efficiency",
+      title: `${money(m.energyTotal)} over ${m.years} years`,
+      math:
+        mathRow("Roof size", squaresLabel(m.squares), squaresLabel(m.squares)) +
+        mathRow(
+          `${m.region.name} annual benefit`,
+          `${money(m.region.energyPerSquare)} per square · aged roof → new Dynasty system`,
+          money(m.energyAnnual)
+        ) +
+        mathRow("Benefit window", `${m.years} years at today’s dollars`, `${m.years} yrs`) +
+        `<p class="bd-total"><span>Energy efficiency</span><strong>${money(m.energyTotal)}</strong></p>`,
+      body:
+        m.region.energyStory +
+        ` This close uses ${money(m.region.energyPerSquare)} per square per year — in the range DOE and LBNL publish ` +
+        `for moving off a dark, worn asphalt roof onto a new architectural system with a sealed, ventilated attic. ` +
+        `IKO Dynasty is a laminated Performance shingle (ArmourZone, FastLock, Class 3 impact). Cool Colors Plus adds ` +
+        `infrared-reflective granules (SRI 20+) where that color is selected. Not a utility-bill guarantee.`,
+      cites: [
+        citeLink("https://www.energy.gov/energysaver/cool-roofs", "U.S. DOE — Cool roofs"),
+        citeLink("https://heatisland.lbl.gov/coolscience/cool-roofs", "LBNL Heat Island Group — Cool roofs"),
+        citeLink("https://www.iko.com/na/product/dynasty/", "IKO Dynasty Performance shingles"),
+        citeLink("https://www.iko.com/na/product/dynasty-cool-plus/", "IKO Dynasty Cool Colors Plus"),
+      ].join(""),
+    };
+  }
+
+  const premiumSource = m.usedEnteredPremium
+    ? "this home’s annual premium"
+    : `the ${m.region.name} average premium in this model`;
+  const ageLine = m.roofAge ? ` This roof is about ${Math.round(m.roofAge)} years old.` : "";
+  return {
+    kicker: "Insurance benefits",
+    title: `${money(m.insuranceTotal)} over ${m.years} years`,
+    math:
+      mathRow("Annual premium", premiumSource, money(m.premium)) +
+      mathRow(
+        "Typical new-roof credit",
+        `${pctLabel(m.region.insuranceDiscount)} · ${m.region.name} (national conversation 5–25%)`,
+        money(m.insuranceAnnual)
+      ) +
+      mathRow("Benefit window", `${m.years} years at today’s dollars`, `${m.years} yrs`) +
+      `<p class="bd-total"><span>Insurance benefits</span><strong>${money(m.insuranceTotal)}</strong></p>`,
+    body:
+      m.region.insuranceStory +
+      ageLine +
+      ` Triple-I notes that stronger roofing and wind-mitigation work can cut premiums, and its 2024 roof toolkit ` +
+      `puts impact-resistant credits commonly in the 5–35% range depending on state and carrier. ` +
+      `This close uses ${pctLabel(m.region.insuranceDiscount)} of ${money(m.premium)} — ${money(m.insuranceAnnual)} a year. ` +
+      `Some carriers also restore replacement-cost coverage only after a re-roof. Confirm with this home’s insurer.`,
+    cites: [
+      citeLink(
+        "https://www.iii.org/article/12-ways-to-lower-your-homeowners-insurance-costs",
+        "Triple-I — 12 ways to lower homeowners insurance costs"
+      ),
+      citeLink(
+        "https://www.iii.org/sites/default/files/docs/pdf/triple-i_roof_toolkit_2024.pdf",
+        "Triple-I — How your roof influences insurance (2024)"
+      ),
+      citeLink(
+        "https://insuranceindustryblog.iii.org/why-roof-resilience-matters-more-than-ever/",
+        "Triple-I — Why roof resilience matters"
+      ),
+      citeLink("https://ibhs.org/fortified/", "IBHS FORTIFIED Roof — resilience standard & discounts"),
+    ].join(""),
+  };
+}
+
+function closeBenefitPop() {
+  openBenefit = null;
+  els.benefitPop.hidden = true;
+}
+
+function openBenefitPop(kind) {
+  if (!lastModel || !["value", "energy", "insurance"].includes(kind)) return;
+  openBenefit = kind;
+  const copy = benefitCopy(kind, lastModel);
+  els.benefitPopKicker.textContent = copy.kicker;
+  els.benefitPopTitle.textContent = copy.title;
+  els.benefitPopMath.innerHTML = copy.math;
+  els.benefitPopBody.textContent = copy.body;
+  els.benefitPopCites.innerHTML = copy.cites;
+  els.benefitPop.hidden = false;
+}
+
 function renderChart() {
   const data = readInputs();
   if (!data.squares || !data.pricePerSquare) return;
   const m = compute(data);
+  lastModel = m;
   const ageBit = m.roofAge
     ? ` This roof is about ${Math.round(m.roofAge)} years old.`
     : "";
@@ -392,13 +539,13 @@ function renderChart() {
   els.wfTotalNote.textContent = `${squaresLabel(m.squares)} × ${money(m.pps)} · IKO Dynasty architectural system`;
 
   els.wfValue.textContent = `−${money(m.valueAdd)}`;
-  els.wfValueNote.textContent = `${m.region.recoupLabel} recoup in ${m.region.name} (JLC 2025 asphalt roof)`;
+  els.wfValueNote.textContent = `${m.region.recoupLabel} recoup in ${m.region.name} · tap for sources`;
 
   els.wfEnergy.textContent = `−${money(m.energyTotal)}`;
-  els.wfEnergyNote.textContent = `${money(m.energyAnnual)} / year × ${m.years} years · ${money(m.region.energyPerSquare)} per square`;
+  els.wfEnergyNote.textContent = `${money(m.energyAnnual)} / year × ${m.years} years · tap for sources`;
 
   els.wfInsurance.textContent = `−${money(m.insuranceTotal)}`;
-  els.wfInsuranceNote.textContent = `${pctLabel(m.region.insuranceDiscount)} of ${money(m.premium)} / year × ${m.years} years${m.usedEnteredPremium ? " · this home" : ` · ${m.region.name} avg`}`;
+  els.wfInsuranceNote.textContent = `${pctLabel(m.region.insuranceDiscount)} of ${money(m.premium)} / year · tap for sources`;
 
   const netIsGain = m.net < 0;
   els.netRow.classList.toggle("is-gain", netIsGain);
@@ -456,6 +603,8 @@ function renderChart() {
     (m.usedEnteredPremium ? " using the premium entered for this home." : ` using a ${m.region.name} average premium.`) +
     ` Actual carrier credits range roughly 5–25% and some policies require a new roof to bind or to keep replacement-cost coverage. ` +
     `Value, energy, and insurance accrue on different timelines. Illustrative kitchen-table math — not a savings, appraisal, or insurance guarantee.`;
+
+  if (openBenefit) openBenefitPop(openBenefit);
 }
 
 function showScreen(name) {
@@ -469,7 +618,10 @@ function showScreen(name) {
   document.body.classList.toggle("presenting", presenting);
   window.scrollTo(0, 0);
   if (presenting) renderChart();
-  else setWalking(false);
+  else {
+    setWalking(false);
+    closeBenefitPop();
+  }
 }
 
 function setWalking(on) {
@@ -537,15 +689,40 @@ document.querySelectorAll('input[name="horizon-years"]').forEach((input) => {
   });
 });
 
+document.querySelectorAll("[data-benefit]").forEach((row) => {
+  const open = () => openBenefitPop(row.getAttribute("data-benefit"));
+  row.addEventListener("click", (event) => {
+    event.stopPropagation();
+    open();
+  });
+  row.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      open();
+    }
+  });
+});
+
+els.benefitPop.addEventListener("click", (event) => {
+  if (event.target === els.benefitPop || event.target.closest("#benefit-pop-close")) {
+    closeBenefitPop();
+  }
+});
+
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .util-path")) return;
+  if (event.target.closest(".present-tools, a, .util-path, .has-detail, .cost-pop")) return;
   revealNext();
 });
 
 document.addEventListener("keydown", (event) => {
   if (els.chart.hidden) return;
   if (event.key === "Escape") {
+    if (!els.benefitPop.hidden) {
+      closeBenefitPop();
+      return;
+    }
     showScreen("input");
     return;
   }

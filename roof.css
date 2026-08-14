@@ -100,7 +100,7 @@
   border: 1px solid var(--line);
   border-radius: 22px;
   box-shadow: var(--shadow);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .waterfall-row {
@@ -111,10 +111,12 @@
   padding: 1.15rem 1.35rem 1.2rem;
   border-top: 1px solid rgba(11, 31, 42, 0.08);
   animation: rise 0.55s ease both;
+  overflow: visible;
 }
 
 .waterfall-row:first-child {
   border-top: 0;
+  border-radius: 22px 22px 0 0;
 }
 
 .waterfall-row:nth-child(1) { animation-delay: 0.04s; }
@@ -122,6 +124,11 @@
 .waterfall-row:nth-child(3) { animation-delay: 0.16s; }
 .waterfall-row:nth-child(4) { animation-delay: 0.22s; }
 .waterfall-row:nth-child(5) { animation-delay: 0.28s; }
+
+.waterfall-row:hover,
+.waterfall-row:focus-within {
+  z-index: 2;
+}
 
 .wf-kicker {
   margin: 0;
@@ -150,11 +157,27 @@
 
 .wf-amount {
   margin: 0;
+  display: inline-block;
   font-family: var(--display);
   font-size: clamp(1.85rem, 4.2vw, 2.85rem);
+  font-weight: 400;
   letter-spacing: -0.03em;
   line-height: 1;
   white-space: nowrap;
+  transform-origin: center right;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    font-weight 0.2s ease,
+    letter-spacing 0.2s ease,
+    -webkit-text-stroke 0.2s ease;
+}
+
+.waterfall-row:hover .wf-amount,
+.waterfall-row:focus-within .wf-amount {
+  transform: scale(1.22);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  -webkit-text-stroke: 0.55px currentColor;
 }
 
 .waterfall-row.is-credit {
@@ -165,9 +188,20 @@
   color: var(--accent-deep);
 }
 
+.waterfall-row.has-detail {
+  cursor: pointer;
+}
+
+.waterfall-row.has-detail .wf-note {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+}
+
 .waterfall-row.is-net {
   background: var(--ink);
   color: #fff;
+  border-radius: 0 0 22px 22px;
 }
 
 .waterfall-row.is-net .wf-kicker,
@@ -210,6 +244,37 @@
   text-decoration: underline;
 }
 
+.benefit-pop-card {
+  width: min(36rem, 100%);
+  max-height: min(90vh, 44rem);
+  overflow: auto;
+}
+
+.benefit-pop-body {
+  margin: 0.85rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.benefit-cites {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.95rem 0 0.2rem;
+  justify-items: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-amount {
+    transition: none;
+  }
+
+  .waterfall-row:hover .wf-amount,
+  .waterfall-row:focus-within .wf-amount {
+    transform: none;
+  }
+}
+
 @media (max-width: 860px) {
   .roof-optional-grid,
   .benefit-story {
@@ -239,6 +304,15 @@
 
   .wf-amount {
     font-size: clamp(1.55rem, 8vw, 2.15rem);
+    transform-origin: left center;
+  }
+
+  .waterfall-row:hover .wf-amount,
+  .waterfall-row:focus-within .wf-amount {
+    transform: none;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    -webkit-text-stroke: 0;
   }
 
   .job-recap-value {

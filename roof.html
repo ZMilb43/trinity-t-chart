@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=roof1" />
-  <link rel="stylesheet" href="roof.css?v=roof1" />
+  <link rel="stylesheet" href="styles.css?v=roof2" />
+  <link rel="stylesheet" href="roof.css?v=roof2" />
 </head>
 <body class="roof-tool">
   <div class="atmosphere" aria-hidden="true"></div>
@@ -196,7 +196,14 @@
           <p class="wf-amount" id="wf-total">—</p>
         </div>
 
-        <div class="waterfall-row is-credit" data-step="2">
+        <div
+          class="waterfall-row is-credit has-detail"
+          data-step="2"
+          data-benefit="value"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+        >
           <div class="wf-copy">
             <p class="wf-kicker">02 · less</p>
             <h2>Value add-back</h2>
@@ -205,7 +212,14 @@
           <p class="wf-amount" id="wf-value">—</p>
         </div>
 
-        <div class="waterfall-row is-credit" data-step="3">
+        <div
+          class="waterfall-row is-credit has-detail"
+          data-step="3"
+          data-benefit="energy"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+        >
           <div class="wf-copy">
             <p class="wf-kicker">03 · less</p>
             <h2>Energy efficiency</h2>
@@ -214,7 +228,14 @@
           <p class="wf-amount" id="wf-energy">—</p>
         </div>
 
-        <div class="waterfall-row is-credit" data-step="4">
+        <div
+          class="waterfall-row is-credit has-detail"
+          data-step="4"
+          data-benefit="insurance"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+        >
           <div class="wf-copy">
             <p class="wf-kicker">04 · less</p>
             <h2>Insurance benefits</h2>
@@ -308,7 +329,17 @@
   </div>
 
   <div class="walk-hint" id="walk-hint" hidden>Tap anywhere to reveal the next line</div>
+  <div class="cost-pop" id="benefit-pop" hidden>
+    <div class="cost-pop-card benefit-pop-card" role="dialog" aria-modal="true" aria-labelledby="benefit-pop-title">
+      <p class="story-kicker" id="benefit-pop-kicker">Sources</p>
+      <h2 id="benefit-pop-title">What’s in this number</h2>
+      <div class="cost-breakdown" id="benefit-pop-math"></div>
+      <p class="benefit-pop-body" id="benefit-pop-body"></p>
+      <div class="benefit-cites" id="benefit-pop-cites"></div>
+      <button type="button" class="text-btn" id="benefit-pop-close">Close</button>
+    </div>
+  </div>
 
-  <script src="roof.js?v=roof1"></script>
+  <script src="roof.js?v=roof2"></script>
 </body>
 </html>
