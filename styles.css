@@ -634,7 +634,8 @@ body.is-shared #screen-input {
 }
 
 body.is-shared .visualize-wrap,
-body.is-shared .flyover-actions {
+body.is-shared .flyover-actions,
+body.is-shared #hide-flyover-btn {
   display: none !important;
 }
 

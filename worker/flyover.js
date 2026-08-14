@@ -1,6 +1,6 @@
 /**
  * Trinity T-chart — Grok Imagine flyover proxy
- * Version 6 — RSA layout is the authority for panel placement.
+ * Version 7 — RSA layout is the authority for panel placement.
  * Also snapshots Street View / satellite / RSA for shared page-2 links.
  *
  * After editing this file, paste it into the Cloudflare Worker editor
@@ -11,7 +11,7 @@
  *   GOOGLE_MAPS_KEY  (second Google key, no HTTP-referrer lock)
  */
 
-const VERSION = 6;
+const VERSION = 7;
 
 const SHARE_TTL_SECONDS = 60 * 60 * 24 * 90;
 
@@ -25,7 +25,10 @@ const ALLOWED_ORIGINS = [
 
 function corsHeaders(request) {
   const origin = request.headers.get("Origin") || "";
-  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  const allow =
+    ALLOWED_ORIGINS.includes(origin) || /\.github\.io$/i.test(origin)
+      ? origin || "*"
+      : "*";
   return {
     "Access-Control-Allow-Origin": allow,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -308,32 +311,71 @@ async function handleStill(request, env) {
   }
 }
 
-async function handleSharePut(request, env) {
-  if (!env.SHARE) {
-    return json(
-      request,
-      { error: "Share storage is not bound. Run wrangler kv namespace create SHARE.", step: "share" },
-      501
-    );
+async function handleSnapshot(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const address = (body.address || "").trim();
+  const googleKey = env.GOOGLE_MAPS_KEY || "";
+  if (!address) return json(request, { st: "", sa: "" });
+  if (!googleKey) {
+    return json(request, { error: "GOOGLE_MAPS_KEY is not set on the Worker.", step: "config" }, 500);
   }
+  let st = "";
+  let sa = "";
+  try {
+    const street = await fetchImageBytes(mapsUrl("street", address, googleKey));
+    st = `data:${street.mime};base64,${bytesToBase64(street.bytes)}`;
+  } catch {
+    st = "";
+  }
+  try {
+    const satellite = await fetchImageBytes(mapsUrl("satellite", address, googleKey));
+    sa = `data:${satellite.mime};base64,${bytesToBase64(satellite.bytes)}`;
+  } catch {
+    sa = "";
+  }
+  return json(request, { st, sa });
+}
+
+function shareCacheUrl(request, id) {
+  return new URL(`/share-store/${id}`, request.url);
+}
+
+async function handleSharePut(request, env) {
   const body = await request.json();
   const payload = body.payload || body;
   if (!payload || typeof payload !== "object") {
     return json(request, { error: "Missing share payload.", step: "share" }, 400);
   }
   const id = newShareId();
-  await env.SHARE.put(id, JSON.stringify(payload), { expirationTtl: SHARE_TTL_SECONDS });
+  const raw = JSON.stringify(payload);
+  if (env.SHARE) {
+    await env.SHARE.put(id, raw, { expirationTtl: SHARE_TTL_SECONDS });
+  } else {
+    const cache = caches.default;
+    await cache.put(
+      shareCacheUrl(request, id),
+      new Response(raw, {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": `public, max-age=${SHARE_TTL_SECONDS}`,
+        },
+      })
+    );
+  }
   return json(request, { id });
 }
 
 async function handleShareGet(request, env) {
-  if (!env.SHARE) {
-    return json(request, { error: "Share storage is not bound.", step: "share" }, 501);
-  }
   const id = new URL(request.url).searchParams.get("id") || "";
   if (!id) return json(request, { error: "Missing id.", step: "share" }, 400);
-  const raw = await env.SHARE.get(id);
-  if (!raw) return json(request, { error: "That shared view expired or was not found.", step: "share" }, 404);
+  let raw = env.SHARE ? await env.SHARE.get(id) : null;
+  if (!raw) {
+    const hit = await caches.default.match(shareCacheUrl(request, id));
+    if (hit) raw = await hit.text();
+  }
+  if (!raw) {
+    return json(request, { error: "That shared view expired or was not found.", step: "share" }, 404);
+  }
   return json(request, { payload: JSON.parse(raw) });
 }
 
@@ -357,6 +399,7 @@ export default {
       }
 
       if (path.endsWith("/share")) return await handleSharePut(request, env);
+      if (path.endsWith("/snapshot")) return await handleSnapshot(request, env);
       if (path.endsWith("/generate") || path === "/" || path === "/flyover") {
         return await handleGenerate(request, env);
       }

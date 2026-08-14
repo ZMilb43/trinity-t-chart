@@ -881,13 +881,33 @@ function applyShare(data) {
   return Boolean(parsed.utilityRate && parsed.solarRate && parsed.utilityKwh && parsed.solarKwh);
 }
 
+function dataUrlFromImg(img) {
+  if (!img || img.hidden || !img.getAttribute("src")) return "";
+  const src = img.currentSrc || img.src || "";
+  return src.startsWith("data:") ? src : "";
+}
+
 async function captureShareStills() {
   const address = els.address.value.trim();
   const worker = shareWorkerUrl(loadKeys().workerUrl);
+  const rsaNow =
+    dataUrlFromImg(els.rsaStillImg) ||
+    dataUrlFromImg(els.rsaPreviewImg) ||
+    rsaDataUrl ||
+    "";
+  const maps = await fetchShareSnapshot(worker, address);
   const [rs, st, sa] = await Promise.all([
-    rsaDataUrl ? compressDataUrl(rsaDataUrl) : Promise.resolve(""),
-    fetchShareStill(worker, "street", address),
-    fetchShareStill(worker, "satellite", address),
+    rsaNow ? compressDataUrl(rsaNow) : Promise.resolve(""),
+    maps.st
+      ? Promise.resolve(maps.st)
+      : dataUrlFromImg(els.streetImg)
+        ? compressDataUrl(dataUrlFromImg(els.streetImg))
+        : Promise.resolve(""),
+    maps.sa
+      ? Promise.resolve(maps.sa)
+      : dataUrlFromImg(els.satelliteImg)
+        ? compressDataUrl(dataUrlFromImg(els.satelliteImg))
+        : Promise.resolve(""),
   ]);
   return { rs, st, sa };
 }
@@ -913,7 +933,18 @@ async function shareClose() {
       payload.rs = payload.rs ? await compressDataUrl(payload.rs, 400, 0.4) : "";
       shareBody = slimSharePayload(payload);
     }
-    const url = buildShareLink("index.html", shareBody);
+    const url = buildShareLink("index.html", shareBody, worker);
+    const hadPhotos = Boolean(stills.rs || stills.st || stills.sa);
+    const keptPhotos = typeof shareBody === "string" || Boolean(shareBody.st || shareBody.sa || shareBody.rs);
+    if ((data.address || rsaDataUrl) && !hadPhotos) {
+      window.alert(
+        "The comparison link was created, but home photos could not be attached. Paste the latest worker/flyover.js into Cloudflare, Save and Deploy, then share again."
+      );
+    } else if (hadPhotos && !keptPhotos && !id) {
+      window.alert(
+        "The comparison link was created, but the photos were too large to fit. Paste the latest worker/flyover.js into Cloudflare and confirm the SHARE binding, then share again."
+      );
+    }
     const result = await shareOrCopy(
       url,
       "Your Trinity solar comparison",
@@ -930,19 +961,24 @@ async function shareClose() {
 }
 
 async function bootShare() {
-  const raw = readShareHash();
+  const { share: raw, worker: workerHint } = readShareParams();
   if (!raw) return false;
   try {
     let data;
     if (raw.startsWith("w_")) {
-      data = await downloadSharePayload(shareWorkerUrl(""), raw.slice(2));
+      data = await downloadSharePayload(shareWorkerUrl(workerHint), raw.slice(2));
     } else {
       data = decodeSharePayload(raw);
     }
     if (!applyShare(data)) return false;
     sharedMode = true;
     document.body.classList.add("is-shared");
-    if (els.sharedBanner) els.sharedBanner.hidden = false;
+    if (els.sharedBanner) {
+      els.sharedBanner.hidden = false;
+      els.sharedBanner.textContent = shareStills.loaded
+        ? "Numbers and home photos are locked from your Trinity visit. You can still walk through the T-chart and turn roofing or batteries on."
+        : "Numbers are locked from your Trinity visit. You can still walk through the T-chart and turn roofing or batteries on.";
+    }
     showScreen("chart");
     return true;
   } catch {

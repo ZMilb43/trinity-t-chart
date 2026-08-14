@@ -24,20 +24,28 @@ function decodeSharePayload(raw) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-function readShareHash() {
+function readShareParams() {
   const hash = String(location.hash || "").replace(/^#/, "");
-  if (!hash) return "";
-  if (!hash.includes("=")) return hash;
-  return new URLSearchParams(hash).get("share") || "";
+  if (!hash) return { share: "", worker: "" };
+  const params = new URLSearchParams(hash.includes("=") ? hash : "share=" + hash);
+  return { share: params.get("share") || "", worker: params.get("u") || "" };
 }
 
-function buildShareLink(page, payload) {
+function readShareHash() {
+  return readShareParams().share;
+}
+
+function buildShareLink(page, payload, workerUrl) {
   const url = new URL(page, location.href);
   url.search = "";
-  url.hash =
-    typeof payload === "string"
-      ? "share=" + payload
-      : "share=" + encodeSharePayload(payload);
+  if (typeof payload === "string" && payload.startsWith("w_")) {
+    const parts = [`share=${payload}`];
+    const worker = shareWorkerUrl(workerUrl);
+    if (worker) parts.push(`u=${encodeURIComponent(worker)}`);
+    url.hash = parts.join("&");
+  } else {
+    url.hash = "share=" + encodeSharePayload(payload);
+  }
   return url.href;
 }
 
@@ -107,6 +115,31 @@ async function fetchShareStill(worker, kind, address) {
   } catch {
     return "";
   }
+}
+
+async function fetchShareSnapshot(worker, address) {
+  if (!worker || !address) return { st: "", sa: "" };
+  try {
+    const res = await fetch(`${worker}/snapshot`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address }),
+    });
+    const data = await res.json();
+    if (res.ok && (data.st || data.sa)) {
+      return {
+        st: data.st ? await compressDataUrl(data.st) : "",
+        sa: data.sa ? await compressDataUrl(data.sa) : "",
+      };
+    }
+  } catch {
+    /* fall through to /still */
+  }
+  const [st, sa] = await Promise.all([
+    fetchShareStill(worker, "street", address),
+    fetchShareStill(worker, "satellite", address),
+  ]);
+  return { st, sa };
 }
 
 async function uploadSharePayload(worker, payload) {
