@@ -67,6 +67,8 @@ const els = {
   editBtn: document.getElementById("edit-btn"),
   walkBtn: document.getElementById("walk-btn"),
   walkHint: document.getElementById("walk-hint"),
+  shareBtn: document.getElementById("share-btn"),
+  sharedBanner: document.getElementById("shared-banner"),
   preparedFor: document.getElementById("prepared-for"),
   utilHead: document.getElementById("util-head"),
   utilHeadKicker: document.getElementById("util-head-kicker"),
@@ -130,6 +132,7 @@ let presentRoofing = false;
 let presentBattery = false;
 let costDetail = null;
 let costPopKind = null;
+let sharedMode = false;
 const stepNodes = () =>
   [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
@@ -548,6 +551,7 @@ function readInputs() {
 }
 
 function saveInputs() {
+  if (sharedMode) return;
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
@@ -822,7 +826,76 @@ function renderChart() {
   });
 }
 
+function packShare() {
+  return {
+    v: 1,
+    n: els.name.value.trim(),
+    u: els.utilityName.value,
+    ur: els.utilityRate.value,
+    uk: els.utilityKwh.value,
+    sr: els.solarRate.value,
+    sk: els.solarKwh.value,
+    se: (document.querySelector('input[name="solar-escalator"]:checked') || {}).value || "0.0299",
+    ue: selectedUtilityEscalator(),
+    ad: els.address.value.trim(),
+    ri: els.roofingInclude.checked ? 1 : 0,
+    rp: els.roofingPrice.value,
+    rm: els.roofingMonthly.value,
+    bi: els.batteryInclude.checked ? 1 : 0,
+    bm: els.batteryMonthly.value,
+  };
+}
+
+function applyShare(data) {
+  if (!data || data.v !== 1) return false;
+  els.name.value = data.n || "";
+  els.utilityName.value = data.u || "National Grid";
+  els.utilityRate.value = data.ur || "";
+  els.utilityKwh.value = data.uk || "";
+  els.solarRate.value = data.sr || "";
+  els.solarKwh.value = data.sk || "";
+  if (data.se != null) setEscalator(String(data.se));
+  if (data.ue != null) setUtilityEscalator(data.ue);
+  els.address.value = data.ad || "";
+  els.roofingInclude.checked = Boolean(data.ri);
+  els.roofingPrice.value = data.rp || "";
+  els.roofingMonthly.value = data.rm || "";
+  els.batteryInclude.checked = Boolean(data.bi);
+  els.batteryMonthly.value = data.bm || "";
+  syncAddonFields();
+  const parsed = readInputs();
+  return Boolean(parsed.utilityRate && parsed.solarRate && parsed.utilityKwh && parsed.solarKwh);
+}
+
+async function shareClose() {
+  const data = readInputs();
+  if (!data.utilityRate || !data.solarRate || !data.utilityKwh || !data.solarKwh) return;
+  const url = buildShareLink("index.html", packShare());
+  const result = await shareOrCopy(
+    url,
+    "Your Trinity solar close",
+    "Here’s the T-chart from Trinity Total Home."
+  );
+  flashShareButton(els.shareBtn, result);
+}
+
+function bootShare() {
+  const raw = readShareHash();
+  if (!raw) return false;
+  try {
+    if (!applyShare(decodeSharePayload(raw))) return false;
+    sharedMode = true;
+    document.body.classList.add("is-shared");
+    if (els.sharedBanner) els.sharedBanner.hidden = false;
+    showScreen("chart");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function showScreen(name) {
+  if (sharedMode && name === "input") return;
   const presenting = name === "chart";
   els.input.hidden = presenting;
   els.chart.hidden = !presenting;
@@ -910,6 +983,12 @@ els.editBtn.addEventListener("click", () => showScreen("input"));
 els.walkBtn.addEventListener("click", () => {
   setWalking(!walking);
 });
+if (els.shareBtn) {
+  els.shareBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    shareClose();
+  });
+}
 
 els.utilityRate.addEventListener("input", () => rateHint(els.utilityRate, els.utilityRateHint));
 els.solarRate.addEventListener("input", () => rateHint(els.solarRate, els.solarRateHint));
@@ -1064,6 +1143,7 @@ document.addEventListener("keydown", (event) => {
       closeCostPop();
       return;
     }
+    if (sharedMode) return;
     showScreen("input");
     return;
   }
@@ -1074,10 +1154,16 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-loadInputs();
-fillKeyFields();
-loadRsa();
-syncAddonFields();
-rateHint(els.utilityRate, els.utilityRateHint);
-rateHint(els.solarRate, els.solarRateHint);
-drawSparkline();
+if (!bootShare()) {
+  loadInputs();
+  fillKeyFields();
+  loadRsa();
+  syncAddonFields();
+  rateHint(els.utilityRate, els.utilityRateHint);
+  rateHint(els.solarRate, els.solarRateHint);
+  drawSparkline();
+} else {
+  syncAddonFields();
+  rateHint(els.utilityRate, els.utilityRateHint);
+  rateHint(els.solarRate, els.solarRateHint);
+}

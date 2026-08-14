@@ -187,6 +187,8 @@ const els = {
   editBtn: document.getElementById("edit-btn"),
   walkBtn: document.getElementById("walk-btn"),
   walkHint: document.getElementById("walk-hint"),
+  shareBtn: document.getElementById("share-btn"),
+  sharedBanner: document.getElementById("shared-banner"),
   preparedFor: document.getElementById("prepared-for"),
   recapSquares: document.getElementById("recap-squares"),
   recapPps: document.getElementById("recap-pps"),
@@ -232,6 +234,7 @@ let walking = false;
 let walkIndex = 0;
 let lastModel = null;
 let openBenefit = null;
+let sharedMode = false;
 const stepNodes = () =>
   [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
@@ -344,6 +347,7 @@ function compute(data) {
 }
 
 function saveInputs() {
+  if (sharedMode) return;
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
@@ -656,7 +660,61 @@ function renderChart() {
   if (openBenefit) openBenefitPop(openBenefit);
 }
 
+function packShare() {
+  return {
+    v: 1,
+    n: els.name.value.trim(),
+    r: els.region.value,
+    sq: els.squares.value,
+    p: els.pricePerSquare.value,
+    a: els.roofAge.value,
+    hv: els.homeValue.value,
+    ip: els.insurancePremium.value,
+  };
+}
+
+function applyShare(data) {
+  if (!data || data.v !== 1) return false;
+  els.name.value = data.n || "";
+  els.region.value = data.r || "new-england";
+  els.squares.value = data.sq || "";
+  els.pricePerSquare.value = data.p || "";
+  els.roofAge.value = data.a || "";
+  els.homeValue.value = data.hv || "";
+  els.insurancePremium.value = data.ip || "";
+  const parsed = readInputs();
+  return Boolean(parsed.squares && parsed.pricePerSquare);
+}
+
+async function shareClose() {
+  const data = readInputs();
+  if (!data.squares || !data.pricePerSquare) return;
+  const url = buildShareLink("roof.html", packShare());
+  const result = await shareOrCopy(
+    url,
+    "Your Trinity roof close",
+    "Here’s the roof close from Trinity Total Home."
+  );
+  flashShareButton(els.shareBtn, result);
+}
+
+function bootShare() {
+  const raw = readShareHash();
+  if (!raw) return false;
+  try {
+    if (!applyShare(decodeSharePayload(raw))) return false;
+    sharedMode = true;
+    document.body.classList.add("is-shared");
+    if (els.sharedBanner) els.sharedBanner.hidden = false;
+    showScreen("chart");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function showScreen(name) {
+  if (sharedMode && name === "input") return;
   const presenting = name === "chart";
   els.input.hidden = presenting;
   els.chart.hidden = !presenting;
@@ -728,6 +786,12 @@ els.sampleBtn.addEventListener("click", () => {
 
 els.editBtn.addEventListener("click", () => showScreen("input"));
 els.walkBtn.addEventListener("click", () => setWalking(!walking));
+if (els.shareBtn) {
+  els.shareBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    shareClose();
+  });
+}
 if (els.loadRoofViewer) {
   els.loadRoofViewer.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -795,6 +859,7 @@ document.addEventListener("keydown", (event) => {
       closeBenefitPop();
       return;
     }
+    if (sharedMode) return;
     showScreen("input");
     return;
   }
@@ -805,6 +870,10 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-loadInputs();
-updateRegionHint();
-updateLiveTotal();
+if (!bootShare()) {
+  loadInputs();
+  updateRegionHint();
+  updateLiveTotal();
+} else {
+  updateRegionHint();
+}

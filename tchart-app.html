@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=home14" />
+  <link rel="stylesheet" href="styles.css?v=home15" />
 </head>
 <body>
   <div class="atmosphere" aria-hidden="true"></div>
@@ -268,11 +268,16 @@
       </div>
       <div class="present-tools">
         <button type="button" class="text-btn" id="walk-btn" aria-pressed="false">Walk through</button>
+        <button type="button" class="text-btn" id="share-btn">Share close</button>
         <button type="button" class="text-btn" id="edit-btn">Edit numbers</button>
       </div>
     </header>
 
     <main class="present">
+      <p class="shared-banner" id="shared-banner" hidden>
+        Numbers are locked from your Trinity visit. You can still walk through
+        the T-chart and turn roofing or batteries on.
+      </p>
       <p class="prepared-for" id="prepared-for"></p>
       <h1 class="present-title">Two paths. <em>One easy choice.</em></h1>
 
@@ -528,6 +533,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=home13"></script>
+  <script src="share-state.js?v=home15"></script>
+  <script src="app.js?v=home15"></script>
 </body>
 </html>

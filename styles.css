@@ -609,6 +609,35 @@ input[type="file"] {
   justify-content: flex-end;
 }
 
+.shared-banner {
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  font-size: 0.84rem;
+  font-weight: 650;
+  line-height: 1.4;
+  color: var(--accent-deep);
+}
+
+.shared-banner[hidden] {
+  display: none;
+}
+
+body.is-shared #edit-btn {
+  display: none;
+}
+
+body.is-shared #screen-input {
+  display: none !important;
+}
+
+body.is-shared .visualize-wrap,
+body.is-shared .home-flyover {
+  display: none !important;
+}
+
 .prepared-for {
   margin: 0.35rem 0 0;
   min-height: 1.2em;

@@ -20,7 +20,7 @@
   <script>
     // GitHub Pages caches HTML for 10 minutes. This shell always loads
     // roof-app.html with a unique query so the latest close is used.
-    location.replace("roof-app.html?t=" + Date.now());
+    location.replace("roof-app.html?t=" + Date.now() + location.hash);
   </script>
 </head>
 <body>
