@@ -13,6 +13,9 @@
  */
 
 const STORAGE_KEY = "trinity-roof-v1";
+const PHOTO_STORAGE = "trinity-roof-house-photo";
+const PHOTO_MAX_EDGE = 1600;
+const PHOTO_JPEG_QUALITY = 0.82;
 const DAY_OF_DISCOUNT = 0.1;
 
 const REGIONS = {
@@ -183,6 +186,10 @@ const els = {
   homeValue: document.getElementById("home-value"),
   insurancePremium: document.getElementById("insurance-premium"),
   premiumHint: document.getElementById("premium-hint"),
+  housePhoto: document.getElementById("house-photo"),
+  housePhotoPreview: document.getElementById("house-photo-preview"),
+  housePhotoPreviewImg: document.getElementById("house-photo-preview-img"),
+  housePhotoClear: document.getElementById("house-photo-clear"),
   sampleBtn: document.getElementById("sample-btn"),
   editBtn: document.getElementById("edit-btn"),
   walkBtn: document.getElementById("walk-btn"),
@@ -223,12 +230,19 @@ const els = {
   benefitPopBody: document.getElementById("benefit-pop-body"),
   benefitPopCites: document.getElementById("benefit-pop-cites"),
   benefitPopClose: document.getElementById("benefit-pop-close"),
+  loadRoofViewer: document.getElementById("load-roofviewer"),
+  roofViewer: document.getElementById("roof-viewer"),
+  roofViewerHouse: document.getElementById("roof-viewer-house"),
+  roofHouseThumb: document.getElementById("roof-house-thumb"),
+  roofViewerWrap: document.getElementById("roofviewer-frame-wrap"),
+  roofViewerFrame: document.getElementById("roofviewer-frame"),
 };
 
 let walking = false;
 let walkIndex = 0;
 let lastModel = null;
 let openBenefit = null;
+let housePhotoDataUrl = "";
 const stepNodes = () =>
   [...document.querySelectorAll("#screen-chart [data-step]")].filter((node) => !node.hidden);
 
@@ -521,6 +535,94 @@ function benefitCopy(kind, m) {
   };
 }
 
+function unloadRoofViewer() {
+  if (!els.roofViewerFrame || !els.roofViewerWrap) return;
+  els.roofViewerFrame.removeAttribute("src");
+  els.roofViewerWrap.hidden = true;
+  if (els.loadRoofViewer) els.loadRoofViewer.textContent = "Reload ROOFViewer";
+}
+
+function loadRoofViewer({ scroll = true } = {}) {
+  if (!els.roofViewerFrame || !els.roofViewerWrap) return;
+  els.roofViewerFrame.src = "https://iko.chameleonpower.com/";
+  els.roofViewerWrap.hidden = false;
+  if (els.loadRoofViewer) els.loadRoofViewer.textContent = "Reload ROOFViewer";
+  if (scroll) {
+    els.roofViewerWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function syncRoofViewer({ autoOpen = false } = {}) {
+  const on = Boolean(housePhotoDataUrl);
+  if (els.roofViewer) els.roofViewer.hidden = !on;
+  if (els.roofViewerHouse) els.roofViewerHouse.hidden = !on;
+  if (on && els.roofHouseThumb) {
+    els.roofHouseThumb.src = housePhotoDataUrl;
+  } else if (els.roofHouseThumb) {
+    els.roofHouseThumb.removeAttribute("src");
+  }
+  if (!on) {
+    unloadRoofViewer();
+    return;
+  }
+  if (autoOpen && els.roofViewerFrame && !els.roofViewerFrame.getAttribute("src")) {
+    loadRoofViewer({ scroll: false });
+  }
+}
+
+function fileToResizedDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read that photo."));
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", PHOTO_JPEG_QUALITY));
+      };
+      img.onerror = () => reject(new Error("That file is not a usable image."));
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function setHousePhoto(dataUrl) {
+  housePhotoDataUrl = dataUrl || "";
+  if (housePhotoDataUrl && els.housePhotoPreview && els.housePhotoPreviewImg) {
+    els.housePhotoPreviewImg.src = housePhotoDataUrl;
+    els.housePhotoPreview.hidden = false;
+    try {
+      sessionStorage.setItem(PHOTO_STORAGE, housePhotoDataUrl);
+    } catch {
+      /* quota — keep in memory only */
+    }
+  } else {
+    if (els.housePhotoPreviewImg) els.housePhotoPreviewImg.removeAttribute("src");
+    if (els.housePhotoPreview) els.housePhotoPreview.hidden = true;
+    if (els.housePhoto) els.housePhoto.value = "";
+    try {
+      sessionStorage.removeItem(PHOTO_STORAGE);
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!els.chart.hidden) syncRoofViewer({ autoOpen: Boolean(housePhotoDataUrl) });
+}
+
+function loadHousePhoto() {
+  try {
+    const stored = sessionStorage.getItem(PHOTO_STORAGE);
+    if (stored) setHousePhoto(stored);
+  } catch {
+    /* ignore */
+  }
+}
+
 function closeBenefitPop() {
   openBenefit = null;
   if (!els.benefitPop) return;
@@ -636,6 +738,7 @@ function renderChart() {
     `Illustrative kitchen-table math — not a savings, appraisal, or insurance guarantee.`;
 
   if (openBenefit) openBenefitPop(openBenefit);
+  syncRoofViewer({ autoOpen: true });
 }
 
 function showScreen(name) {
@@ -654,6 +757,7 @@ function showScreen(name) {
   } else {
     setWalking(false);
     closeBenefitPop();
+    unloadRoofViewer();
   }
 }
 
@@ -706,6 +810,27 @@ els.sampleBtn.addEventListener("click", () => {
 
 els.editBtn.addEventListener("click", () => showScreen("input"));
 els.walkBtn.addEventListener("click", () => setWalking(!walking));
+if (els.loadRoofViewer) {
+  els.loadRoofViewer.addEventListener("click", (event) => {
+    event.stopPropagation();
+    loadRoofViewer();
+  });
+}
+if (els.housePhoto) {
+  els.housePhoto.addEventListener("change", async () => {
+    const file = els.housePhoto.files && els.housePhoto.files[0];
+    if (!file) return;
+    try {
+      setHousePhoto(await fileToResizedDataUrl(file));
+    } catch (error) {
+      els.housePhoto.value = "";
+      window.alert(error.message || "Could not use that photo.");
+    }
+  });
+}
+if (els.housePhotoClear) {
+  els.housePhotoClear.addEventListener("click", () => setHousePhoto(null));
+}
 
 ["input", "change"].forEach((evt) => {
   els.form.addEventListener(evt, () => {
@@ -756,7 +881,7 @@ if (els.benefitPop) {
 
 document.addEventListener("click", (event) => {
   if (!walking || els.chart.hidden) return;
-  if (event.target.closest(".present-tools, a, .util-path, .price-path, .has-detail, .cost-pop")) return;
+  if (event.target.closest(".present-tools, a, button, .util-path, .price-path, .has-detail, .cost-pop, .roof-viewer")) return;
   revealNext();
 });
 
@@ -778,5 +903,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 loadInputs();
+loadHousePhoto();
 updateRegionHint();
 updateLiveTotal();
